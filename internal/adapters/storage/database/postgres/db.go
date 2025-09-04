@@ -1,4 +1,4 @@
-package connection
+package postgres
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 
 var DB *gorm.DB
 
+// create a new connections or instance of database
 func New(ctx context.Context, config *config.DB) (*gorm.DB, error) {
 	// Connection to db using GORM
 	conn, err := gorm.Open(postgres.Open(config.DSN), &gorm.Config{
@@ -59,6 +60,7 @@ func New(ctx context.Context, config *config.DB) (*gorm.DB, error) {
 	return DB, nil
 }
 
+// close database connections
 func Close() {
 	if DB == nil {
 		return
@@ -76,4 +78,25 @@ func Close() {
 	}
 
 	slog.Info("database connection closed successfully")
+}
+
+// execute migrations
+func Migrate(db *gorm.DB) error {
+	err := automigrateSchemas(db)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// loop for all migrations and execute
+func automigrateSchemas(db *gorm.DB, models ...interface{}) error {
+	for _, model := range models {
+		if err := db.AutoMigrate(model); err != nil {
+			slog.Error("Error executing migrations", "migrations", "database")
+			return err
+		}
+	}
+	slog.Info("Migrations successfully executed")
+	return nil
 }

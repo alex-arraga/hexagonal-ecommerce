@@ -4,8 +4,7 @@ import (
 	"context"
 	"go-ecommerce/internal/adapters/config"
 	"go-ecommerce/internal/adapters/logger"
-	"go-ecommerce/internal/adapters/storage/database/postgres/connection"
-	"go-ecommerce/internal/adapters/storage/database/postgres/migrations"
+	"go-ecommerce/internal/adapters/storage/database/postgres"
 	"log/slog"
 	"os"
 )
@@ -23,15 +22,15 @@ func main() {
 
 	// Init database
 	ctx := context.Background()
-	db, err := connection.New(ctx, config.DB)
+	db, err := postgres.New(ctx, config.DB)
 	if err != nil {
 		slog.Error("Error initializing database connection", "error", err)
 		os.Exit(1)
 	}
-	defer connection.Close()
+	defer postgres.Close()
 
 	// execute database migrations
-	err = migrations.ExecMigrations(db)
+	err = postgres.Migrate(db)
 	if err != nil {
 		slog.Error("Error executing database migrations", "error", err)
 		os.Exit(1)
