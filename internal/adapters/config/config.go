@@ -26,12 +26,10 @@ type (
 	}
 
 	DB struct {
-		Connection string
-		Host       string
-		Port       string
-		User       string
-		Password   string
-		Name       string
+		DSN                string
+		MaxOpenConnections string
+		MaxIdleConnections string
+		MaxLifeTime        string
 	}
 
 	HTTP struct {
@@ -70,12 +68,10 @@ func New() (*Container, error) {
 	}
 
 	db := &DB{
-		Connection: getEnv("DB_CONNECTION"),
-		Host:       getEnv("DB_HOST"),
-		Port:       getEnv("DB_PORT"),
-		User:       getEnv("DB_USER"),
-		Password:   getEnv("DB_PASSWORD"),
-		Name:       getEnv("DB_NAME"),
+		DSN:                getEnv("DB_DSN"),
+		MaxOpenConnections: getEnv("DB_MAX_OPEN_CONNECTIONS"),
+		MaxIdleConnections: getEnv("DB_MAX_IDLE_CONNECTIONS"),
+		MaxLifeTime:        getEnv("DB_MAX_LIFETIME"),
 	}
 
 	http := &HTTP{
