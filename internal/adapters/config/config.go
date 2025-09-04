@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -45,7 +45,7 @@ type (
 func getEnv(value string) string {
 	env := os.Getenv(value)
 	if env == "" {
-		fmt.Printf("couldn't get env: %v", value)
+		slog.Error("couldn't get enviroment variable", "error", value)
 		panic("enviroment variable not found")
 	}
 	return env
