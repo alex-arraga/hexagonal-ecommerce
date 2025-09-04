@@ -1,19 +1,26 @@
 package migrations
 
 import (
-	"go-ecommerce/internal/adapters/storage/database/postgres/connection"
 	"log/slog"
+
+	"gorm.io/gorm"
 )
 
-func migrate(models ...interface{}) {
+func migrate(db *gorm.DB, models ...interface{}) error {
 	for _, model := range models {
-		if err := connection.DB.AutoMigrate(model); err != nil {
+		if err := db.AutoMigrate(model); err != nil {
 			slog.Error("Error executing migrations", "migrations", "database")
+			return err
 		}
 	}
 	slog.Info("Migrations successfully executed")
+	return nil
 }
 
-func ExecMigrations() {
-	migrate()
+func ExecMigrations(db *gorm.DB) error {
+	err := migrate(db)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -59,4 +59,21 @@ func New(ctx context.Context, config *config.DB) (*gorm.DB, error) {
 	return DB, nil
 }
 
+func Close() {
+	if DB == nil {
+		return
+	}
 
+	sqlDB, err := DB.DB()
+	if err != nil {
+		slog.Error("failed to get sql.DB for closing", "error", err)
+		return
+	}
+
+	if err := sqlDB.Close(); err != nil {
+		slog.Error("failed to close database connection", "error", err)
+		return
+	}
+
+	slog.Info("database connection closed successfully")
+}
