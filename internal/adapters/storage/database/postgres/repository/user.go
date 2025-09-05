@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"go-ecommerce/internal/adapters/storage/database/postgres/dtos"
+	"go-ecommerce/internal/adapters/storage/database/postgres/database_dtos"
 	"go-ecommerce/internal/adapters/storage/database/postgres/models"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
@@ -26,13 +26,13 @@ func NewUserRepo(db *gorm.DB) ports.UserRepository {
 
 // CreateUser inserts a new user into the database
 func (repo *UserRepo) CreateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
-	userdb := dtos.CovertToDBUser(user)
+	userdb := database_dtos.CovertToDBUser(user)
 
 	if result := repo.db.Create(userdb); result.Error != nil {
 		return nil, result.Error
 	}
 
-	domainUser := dtos.CovertToDomainUser(userdb)
+	domainUser := database_dtos.CovertToDomainUser(userdb)
 	return domainUser, nil
 }
 
@@ -44,7 +44,7 @@ func (repo *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 		return nil, result.Error
 	}
 
-	domainUser := dtos.CovertToDomainUser(dbUser)
+	domainUser := database_dtos.CovertToDomainUser(dbUser)
 	return domainUser, nil
 }
 
@@ -56,7 +56,7 @@ func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*domain
 		return nil, result.Error
 	}
 
-	domainUser := dtos.CovertToDomainUser(dbUser)
+	domainUser := database_dtos.CovertToDomainUser(dbUser)
 	return domainUser, nil
 }
 
@@ -68,7 +68,7 @@ func (repo *UserRepo) ListUsers(ctx context.Context, skip, limit uint64) ([]*dom
 		return []*domain.User{}, result.Error
 	}
 
-	domainUsers := dtos.CovertToDomainUsers(dbUsers)
+	domainUsers := database_dtos.CovertToDomainUsers(dbUsers)
 	return domainUsers, nil
 }
 

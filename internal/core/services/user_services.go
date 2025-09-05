@@ -2,19 +2,17 @@ package services
 
 import (
 	"context"
-	"go-ecommerce/internal/adapters/storage/cache/redis"
-	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"go-ecommerce/internal/core/utils"
 )
 
 type UserService struct {
-	repo  repository.UserRepo
-	cache redis.Redis
+	repo  ports.UserRepository
+	cache ports.CacheRepository
 }
 
-func NewUserService(repo repository.UserRepo, cache redis.Redis) ports.UserService {
+func NewUserService(repo ports.UserRepository, cache ports.CacheRepository) ports.UserService {
 	return &UserService{
 		repo:  repo,
 		cache: cache,

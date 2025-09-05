@@ -1,4 +1,4 @@
-package dtos
+package database_dtos
 
 import (
 	"go-ecommerce/internal/adapters/storage/database/postgres/models"
