@@ -2,13 +2,21 @@ package main
 
 import (
 	"context"
+	"go-ecommerce/internal/adapters/api/http/handlers"
+	"go-ecommerce/internal/adapters/api/http/routes"
 	"go-ecommerce/internal/adapters/config"
 	"go-ecommerce/internal/adapters/logger"
 	"go-ecommerce/internal/adapters/storage/cache/redis"
 	"go-ecommerce/internal/adapters/storage/database/postgres"
-	// "go-ecommerce/internal/adapters/storage/database/postgres/repository"
+	"go-ecommerce/internal/core/services"
+	"net/http"
+	"time"
+
+	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
 	"log/slog"
 	"os"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -48,6 +56,27 @@ func main() {
 	defer cache.Close()
 	slog.Info("Successfully connected to the cache server")
 
-	// userRepo := repository.NewUserRepo(db)
+	// dependency injection
+	userRepo := repository.NewUserRepo(db)
+	userSrv := services.NewUserService(userRepo, cache)
+	userHandler := handlers.NewUserHandler(userSrv)
+
+	router := chi.NewRouter()
+	routes.LoadUserRoutes(router, userHandler)
+
+	// Configurar servidor HTTP
+	s := &http.Server{
+		Handler:      router,
+		Addr:         ":" + config.HTTP.Port,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	err = s.ListenAndServe()
+	if err != nil {
+		slog.Error("Server failed", "error", err)
+		os.Exit(1)
+	}
 
 }
