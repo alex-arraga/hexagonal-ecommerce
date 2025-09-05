@@ -16,7 +16,7 @@ type UserRepository interface {
 	// GetUserByEmail selects a user by email
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	// ListUsers selects a list of users with pagination
-	ListUsers(ctx context.Context, skip, limit uint64) ([]domain.User, error)
+	ListUsers(ctx context.Context, skip, limit uint64) ([]*domain.User, error)
 	// UpdateUser updates a user
 	UpdateUser(ctx context.Context, user *domain.User) (*domain.User, error)
 	// DeleteUser deletes a user

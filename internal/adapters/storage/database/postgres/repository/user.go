@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"go-ecommerce/internal/adapters/storage/database/postgres/dtos"
+	"go-ecommerce/internal/adapters/storage/database/postgres/models"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 
@@ -20,47 +22,57 @@ func NewUserRepo(db *gorm.DB) ports.UserRepository {
 
 // CreateUser inserts a new user into the database
 func (repo *UserRepo) CreateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
-	if result := repo.db.Create(user); result.Error != nil {
+	userdb := dtos.CovertToDBUser(user)
+
+	if result := repo.db.Create(userdb); result.Error != nil {
 		return nil, result.Error
 	}
 
-	return user, nil
+	domainUser := dtos.CovertToDomainUser(userdb)
+	return domainUser, nil
 }
 
 // GetUserByID selects a user by id
 func (repo *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
-	var user domain.User
+	var dbUser *models.UserModel
 
-	if result := repo.db.First(&user, "id = ?", id); result.Error != nil {
+	if result := repo.db.First(dbUser, "id = ?", id); result.Error != nil {
 		return nil, result.Error
 	}
-	return &user, nil
+
+	domainUser := dtos.CovertToDomainUser(dbUser)
+	return domainUser, nil
 }
 
 // GetUserByEmail selects a user by email
 func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	var user domain.User
+	var dbUser *models.UserModel
 
-	if result := repo.db.First(&user, "email = ?", email); result.Error != nil {
+	if result := repo.db.First(&dbUser, "email = ?", email); result.Error != nil {
 		return nil, result.Error
 	}
-	return &user, nil
+
+	domainUser := dtos.CovertToDomainUser(dbUser)
+	return domainUser, nil
 }
 
 // ListUsers selects a list of users with pagination
-func (repo *UserRepo) ListUsers(ctx context.Context, skip, limit uint64) ([]domain.User, error) {
-	var users []domain.User
+func (repo *UserRepo) ListUsers(ctx context.Context, skip, limit uint64) ([]*domain.User, error) {
+	var dbUsers []*models.UserModel
 
-	if result := repo.db.Find(&users); result.Error != nil {
-		return []domain.User{}, result.Error
+	if result := repo.db.Find(&dbUsers); result.Error != nil {
+		return []*domain.User{}, result.Error
 	}
 
-	return users, nil
+	domainUsers := dtos.CovertToDomainUsers(dbUsers)
+	return domainUsers, nil
 }
 
 // UpdateUser updates a user
 func (repo *UserRepo) UpdateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
-	result := repo.db.Model(&domain.User{}).Where("id = ?", user.ID).Updates(user)
+	var dbUser *models.UserModel
+
+	result := repo.db.Model(dbUser).Where("id = ?", user.ID).Updates(user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -75,9 +87,9 @@ func (repo *UserRepo) UpdateUser(ctx context.Context, user *domain.User) (*domai
 
 // DeleteUser deletes a user
 func (repo *UserRepo) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	var user domain.User
+	var dbUser *models.UserModel
 
-	if result := repo.db.Delete(&user, "id = ?", id); result.Error != nil {
+	if result := repo.db.Delete(&dbUser, "id = ?", id); result.Error != nil {
 		return result.Error
 	}
 	return nil
