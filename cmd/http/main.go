@@ -6,6 +6,7 @@ import (
 	"go-ecommerce/internal/adapters/logger"
 	"go-ecommerce/internal/adapters/storage/cache/redis"
 	"go-ecommerce/internal/adapters/storage/database/postgres"
+	// "go-ecommerce/internal/adapters/storage/database/postgres/repository"
 	"log/slog"
 	"os"
 )
@@ -46,5 +47,7 @@ func main() {
 	}
 	defer cache.Close()
 	slog.Info("Successfully connected to the cache server")
+
+	// userRepo := repository.NewUserRepo(db)
 
 }

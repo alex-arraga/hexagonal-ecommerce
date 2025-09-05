@@ -11,6 +11,10 @@ import (
 	"gorm.io/gorm"
 )
 
+/**
+ * UserRepository implements port.UserRepository interface
+ * and provides an access to the postgres database
+ */
 type UserRepo struct {
 	db *gorm.DB
 }
