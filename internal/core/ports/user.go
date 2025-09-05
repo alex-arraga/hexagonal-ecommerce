@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Methods that interacting with database
+// UserReposity is an interface that contains methods for interacting with the repository, which will impact the database
 type UserRepository interface {
 	// CreateUser inserts a new user into the database
 	CreateUser(ctx context.Context, user *domain.User) (*domain.User, error)
@@ -21,4 +21,18 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user *domain.User) (*domain.User, error)
 	// DeleteUser deletes a user
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+}
+
+// UserService is an interface for interacting with user-related business logic
+type UserService interface {
+	// Register registers a new user
+	Register(ctx context.Context, user *domain.User) (*domain.User, error)
+	// GetUser returns a user by id
+	// GetUser(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	// // ListUsers returns a list of users with pagination
+	// ListUsers(ctx context.Context, skip, limit uint64) ([]domain.User, error)
+	// // UpdateUser updates a user
+	// UpdateUser(ctx context.Context, user *domain.User) (*domain.User, error)
+	// // DeleteUser deletes a user
+	// DeleteUser(ctx context.Context, id uuid.UUID) error
 }
