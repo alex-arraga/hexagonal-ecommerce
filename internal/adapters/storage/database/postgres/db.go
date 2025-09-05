@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"go-ecommerce/internal/adapters/config"
+	"go-ecommerce/internal/adapters/storage/database/postgres/models"
 	"log/slog"
 	"strconv"
 	"time"
@@ -82,7 +83,9 @@ func Close() {
 
 // execute migrations
 func Migrate(db *gorm.DB) error {
-	err := automigrateSchemas(db)
+	err := automigrateSchemas(db,
+		&models.UserModel{},
+	)
 	if err != nil {
 		return err
 	}

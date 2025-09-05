@@ -5,6 +5,8 @@ import (
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"go-ecommerce/internal/core/utils"
+
+	"github.com/google/uuid"
 )
 
 type UserService struct {
@@ -27,9 +29,14 @@ func (us *UserService) Register(ctx context.Context, user *domain.User) (*domain
 		return nil, domain.ErrInternal
 	}
 
-	user.Password = hashedPassword
+	u := &domain.User{
+		ID:       uuid.New(),
+		Name:     user.Name,
+		Password: hashedPassword,
+		Email:    user.Email,
+	}
 
-	user, err = us.repo.CreateUser(ctx, user)
+	user, err = us.repo.CreateUser(ctx, u)
 	if err != nil {
 		if err == domain.ErrConflictingData {
 			return nil, err

@@ -73,6 +73,8 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	slog.Info("Server listening", "port:", config.HTTP.Port)
+
 	err = s.ListenAndServe()
 	if err != nil {
 		slog.Error("Server failed", "error", err)

@@ -44,14 +44,15 @@ func getEnv(value string) string {
 	env := os.Getenv(value)
 	if env == "" {
 		slog.Error("couldn't get enviroment variable", "error", value)
-		panic("enviroment variable not found")
 	}
 	return env
 }
 
+const envFile string = "../../.env"
+
 func New() (*Container, error) {
 	if os.Getenv("APP_ENV") != "production" {
-		err := godotenv.Load()
+		err := godotenv.Load(envFile)
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +76,6 @@ func New() (*Container, error) {
 	}
 
 	http := &HTTP{
-		Env:            getEnv("APP_ENV"),
 		URL:            getEnv("APP_URL"),
 		Port:           getEnv("APP_PORT"),
 		AllowedOrigins: getEnv("APP_ALLOWED_ORIGINS"),
