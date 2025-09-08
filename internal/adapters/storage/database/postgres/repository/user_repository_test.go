@@ -32,10 +32,10 @@ func Test_CreateUserAndGetUser(t *testing.T) {
 	assert.Equal(t, u.Email, userCreated.Email)
 
 	// get by id
-	// getById, err := repo.GetUserByID(ctx, userCreated.ID)
-	// require.NoError(t, err)
-	// require.NotNil(t, getById)
-	// assert.Equal(t, userCreated.ID, getById.ID)
+	getById, err := repo.GetUserByID(ctx, userCreated.ID)
+	require.NoError(t, err)
+	require.NotNil(t, getById)
+	assert.Equal(t, userCreated.ID, getById.ID)
 
 	// get by email
 	getByEmail, err := repo.GetUserByEmail(ctx, userCreated.Email)

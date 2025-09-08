@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"go-ecommerce/internal/adapters/storage/database/postgres/database_dtos"
 	"go-ecommerce/internal/adapters/storage/database/postgres/models"
 	"go-ecommerce/internal/core/domain"
@@ -40,7 +41,10 @@ func (repo *UserRepo) CreateUser(ctx context.Context, user *domain.User) (*domai
 func (repo *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var dbUser *models.UserModel
 
-	if result := repo.db.WithContext(ctx).First(dbUser, "id = ?", id); result.Error != nil {
+	if result := repo.db.WithContext(ctx).First(&dbUser, "id = ?", id); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
 		return nil, result.Error
 	}
 
@@ -77,7 +81,7 @@ func (repo *UserRepo) ListUsers(ctx context.Context, skip, limit uint64) ([]*dom
 
 // UpdateUser updates a user
 func (repo *UserRepo) UpdateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
-	var dbUser *models.UserModel
+	var dbUser models.UserModel
 
 	result := repo.db.WithContext(ctx).
 		Model(dbUser).
