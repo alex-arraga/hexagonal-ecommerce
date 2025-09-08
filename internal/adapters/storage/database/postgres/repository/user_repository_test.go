@@ -68,3 +68,27 @@ func Test_ListUsers(t *testing.T) {
 	assert.Len(t, users2, 10)
 	assert.True(t, len(users2) >= 1) // almost one user rest
 }
+
+func Test_UpdateUser(t *testing.T) {
+	ctx := context.Background()
+	_, repo := newRepoTx(t)
+
+	u := testhelpers.NewDomainUser("john", "john@mail.test")
+	created, err := repo.CreateUser(ctx, u)
+	require.NoError(t, err)
+
+	newName := faker.FirstName()
+	newPass := faker.Password()
+	newEmail := faker.Email()
+
+	created.Name = newName
+	created.Password = newPass
+	created.Email = newEmail
+
+	// update all data
+	updated, err := repo.UpdateUser(ctx, created)
+	require.NoError(t, err)
+	assert.Equal(t, newName, updated.Name)
+	assert.Equal(t, newPass, updated.Password)
+	assert.Equal(t, newEmail, updated.Email)
+}
