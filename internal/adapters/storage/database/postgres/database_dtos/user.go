@@ -52,7 +52,7 @@ func CovertToDomainUser(u *models.UserModel) *domain.User {
 
 // DB models -> domain.Users
 func CovertToDomainUsers(users []*models.UserModel) []*domain.User {
-	var domainUsers = make([]*domain.User, len(users))
+	var domainUsers []*domain.User
 
 	for _, u := range users {
 		domainUsers = append(domainUsers, &domain.User{

@@ -6,6 +6,7 @@ import (
 	testhelpers "go-ecommerce/internal/test_helpers"
 	"testing"
 
+	"github.com/go-faker/faker/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -23,7 +24,7 @@ func Test_CreateUserAndGetUser(t *testing.T) {
 	_, repo := newRepoTx(t)
 
 	// create user
-	u := testhelpers.NewDomainUser("John", "john@gmail.com")
+	u := testhelpers.NewDomainUser("John", "john@mail.test")
 	userCreated, err := repo.CreateUser(ctx, u)
 
 	require.NoError(t, err)
@@ -42,4 +43,27 @@ func Test_CreateUserAndGetUser(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, getByEmail)
 	assert.Equal(t, userCreated.Email, getByEmail.Email)
+}
+
+func Test_ListUsers(t *testing.T) {
+	ctx := context.Background()
+	_, repo := newRepoTx(t)
+
+	// creates 20 users
+	for range 20 {
+		name := faker.FirstName()
+		email := faker.Email()
+		u := testhelpers.NewDomainUser(name, email)
+		_, err := repo.CreateUser(ctx, u)
+		require.NoError(t, err)
+	}
+
+	users1, err := repo.ListUsers(ctx, 0, 10)
+	require.NoError(t, err)
+	assert.Len(t, users1, 10)
+
+	users2, err := repo.ListUsers(ctx, 10, 10)
+	require.NoError(t, err)
+	assert.Len(t, users2, 10)
+	assert.True(t, len(users2) >= 1) // almost one user rest
 }
