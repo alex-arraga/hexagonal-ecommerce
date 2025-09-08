@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -52,7 +53,7 @@ func Test_ListUsers(t *testing.T) {
 	// creates 20 users
 	for range 20 {
 		name := faker.FirstName()
-		email := faker.Email()
+		email := faker.Email(options.WithCustomDomain("test"))
 		u := testhelpers.NewDomainUser(name, email)
 		_, err := repo.CreateUser(ctx, u)
 		require.NoError(t, err)
