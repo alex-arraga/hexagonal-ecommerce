@@ -92,3 +92,22 @@ func Test_UpdateUser(t *testing.T) {
 	assert.Equal(t, newPass, updated.Password)
 	assert.Equal(t, newEmail, updated.Email)
 }
+
+func Test_DeleteUser(t *testing.T) {
+	ctx := context.Background()
+	_, repo := newRepoTx(t)
+
+	u := testhelpers.NewDomainUser("john", "john@mail.test")
+	created, err := repo.CreateUser(ctx, u)
+	require.NoError(t, err)
+
+	// deletes user
+	err = repo.DeleteUser(ctx, created.ID)
+	require.NoError(t, err)
+	assert.Nil(t, err)
+
+	// get by id
+	getById, err := repo.GetUserByID(ctx, created.ID)
+	require.Nil(t, getById)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}

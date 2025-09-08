@@ -43,7 +43,7 @@ func (repo *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 
 	if result := repo.db.WithContext(ctx).First(&dbUser, "id = ?", id); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, errors.New("user not found")
+			return nil, result.Error
 		}
 		return nil, result.Error
 	}
