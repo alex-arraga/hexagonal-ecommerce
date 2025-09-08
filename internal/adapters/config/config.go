@@ -3,6 +3,7 @@ package config
 import (
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -36,7 +37,7 @@ type (
 		Env            string
 		URL            string
 		Port           string
-		AllowedOrigins string
+		AllowedOrigins []string
 	}
 )
 
@@ -75,10 +76,13 @@ func New() (*Container, error) {
 		MaxLifeTime:        getEnv("DB_MAX_LIFETIME"),
 	}
 
+	allowedOriginsStr := getEnv("APP_ALLOWED_ORIGINS")
+	allowedOriginsOpts := strings.Split(allowedOriginsStr, ",")
+
 	http := &HTTP{
 		URL:            getEnv("APP_URL"),
 		Port:           getEnv("APP_PORT"),
-		AllowedOrigins: getEnv("APP_ALLOWED_ORIGINS"),
+		AllowedOrigins: allowedOriginsOpts,
 	}
 
 	return &Container{

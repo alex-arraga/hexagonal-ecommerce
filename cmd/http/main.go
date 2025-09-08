@@ -17,6 +17,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 )
 
 func main() {
@@ -61,7 +62,16 @@ func main() {
 	userSrv := services.NewUserService(userRepo, cache)
 	userHandler := handlers.NewUserHandler(userSrv)
 
+	// router and load routes
 	router := chi.NewRouter()
+
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: config.HTTP.AllowedOrigins,
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		MaxAge:         300,
+	}))
+
 	routes.LoadUserRoutes(router, userHandler)
 
 	// Configurar servidor HTTP
