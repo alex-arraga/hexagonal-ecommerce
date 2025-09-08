@@ -12,7 +12,7 @@ import (
 )
 
 /**
- * UserRepository implements port.UserRepository interface
+ * UserRepo implements port.UserRepository interface
  * and provides an access to the postgres database
  */
 type UserRepo struct {
@@ -28,7 +28,7 @@ func NewUserRepo(db *gorm.DB) ports.UserRepository {
 func (repo *UserRepo) CreateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
 	userdb := database_dtos.CovertToDBUser(user)
 
-	if result := repo.db.Create(userdb); result.Error != nil {
+	if result := repo.db.WithContext(ctx).Create(userdb); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -40,7 +40,7 @@ func (repo *UserRepo) CreateUser(ctx context.Context, user *domain.User) (*domai
 func (repo *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var dbUser *models.UserModel
 
-	if result := repo.db.First(dbUser, "id = ?", id); result.Error != nil {
+	if result := repo.db.WithContext(ctx).First(dbUser, "id = ?", id); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -52,7 +52,7 @@ func (repo *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var dbUser *models.UserModel
 
-	if result := repo.db.First(&dbUser, "email = ?", email); result.Error != nil {
+	if result := repo.db.WithContext(ctx).First(&dbUser, "email = ?", email); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -64,8 +64,11 @@ func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*domain
 func (repo *UserRepo) ListUsers(ctx context.Context, skip, limit uint64) ([]*domain.User, error) {
 	var dbUsers []*models.UserModel
 
-	if result := repo.db.Find(&dbUsers); result.Error != nil {
-		return []*domain.User{}, result.Error
+	if result := repo.db.WithContext(ctx).
+		Offset(int(skip)).
+		Limit(int(limit)).
+		Find(&dbUsers); result.Error != nil {
+		return nil, result.Error
 	}
 
 	domainUsers := database_dtos.CovertToDomainUsers(dbUsers)
@@ -76,25 +79,18 @@ func (repo *UserRepo) ListUsers(ctx context.Context, skip, limit uint64) ([]*dom
 func (repo *UserRepo) UpdateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
 	var dbUser *models.UserModel
 
-	result := repo.db.Model(dbUser).Where("id = ?", user.ID).Updates(user)
+	result := repo.db.WithContext(ctx).
+		Model(dbUser).
+		Where("id = ?", user.ID).
+		Updates(user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
-	updatedUser, err := repo.GetUserByID(ctx, user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return updatedUser, nil
+	return repo.GetUserByID(ctx, user.ID)
 }
 
 // DeleteUser deletes a user
 func (repo *UserRepo) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	var dbUser *models.UserModel
-
-	if result := repo.db.Delete(&dbUser, "id = ?", id); result.Error != nil {
-		return result.Error
-	}
-	return nil
+	return repo.db.WithContext(ctx).Delete(&models.UserModel{}, "id = ?", id).Error
 }
