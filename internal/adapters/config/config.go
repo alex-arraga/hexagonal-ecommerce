@@ -24,6 +24,7 @@ type (
 	Redis struct {
 		Addr     string
 		Password string
+		DB       int
 	}
 
 	DB struct {
@@ -67,6 +68,7 @@ func New() (*Container, error) {
 	redis := &Redis{
 		Addr:     getEnv("REDIS_ADDR"),
 		Password: getEnv("REDIS_PASSWORD"),
+		DB:       0,
 	}
 
 	db := &DB{

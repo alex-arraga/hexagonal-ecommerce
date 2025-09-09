@@ -17,7 +17,7 @@ func New(ctx context.Context, config *config.Redis) (ports.CacheRepository, erro
 	client := redis.NewClient(&redis.Options{
 		Addr:     config.Addr,
 		Password: config.Password,
-		DB:       0,
+		DB:       config.DB,
 	})
 
 	_, err := client.Ping(ctx).Result()
