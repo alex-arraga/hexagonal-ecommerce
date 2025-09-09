@@ -70,10 +70,10 @@ func Test_UserE2E(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
-	var createdUser map[string]any
-	json.NewDecoder(resp.Body).Decode(&createdUser)
+	var response map[string]any
+	json.NewDecoder(resp.Body).Decode(&response)
 
-	data := createdUser["data"].(map[string]any) // assert para convertir "data"
+	data := response["data"].(map[string]any) // assert to manage "data" prop in body of response
 	userID := data["ID"]
 
 	assert.Equal(t, payload["name"], data["Name"])
