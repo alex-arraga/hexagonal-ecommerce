@@ -16,10 +16,11 @@ func Test_UserRepo_With_Postgres_Container(t *testing.T) {
 	// init postgres container
 	cont, err := testhelpers.NewPostgresContainerDB(t)
 	require.NoError(t, err)
+	defer cont.Container.Terminate(ctx)
 
+	// init transaction and when the test ends, execute a rollback
 	tx := cont.DB.Begin()
 	t.Cleanup(func() { tx.Rollback() })
-	defer cont.Container.Terminate(ctx)
 
 	// verify if database works
 	err = cont.DB.Exec("SELECT 1").Error
@@ -28,7 +29,7 @@ func Test_UserRepo_With_Postgres_Container(t *testing.T) {
 	repo := repository.NewUserRepo(tx)
 	u := testhelpers.NewDomainUser("john", "john@mail.test")
 
-	// create user
+	// repo testing - create user
 	create, err := repo.CreateUser(ctx, u)
 	require.NoError(t, err)
 	assert.Equal(t, u.ID, create.ID)
