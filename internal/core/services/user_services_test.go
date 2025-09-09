@@ -6,6 +6,7 @@ import (
 	"go-ecommerce/internal/core/ports"
 	"go-ecommerce/internal/core/services"
 	testhelpers "go-ecommerce/internal/test_helpers"
+	"go-ecommerce/internal/test_helpers/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ func newRepoServices(t *testing.T) ports.UserService {
 	tx := db.Begin()
 	t.Cleanup(func() { tx.Rollback() })
 
-	redis := testhelpers.NewMockRedis()
+	redis := mocks.NewMockRedis()
 
 	repo := repository.NewUserRepo(tx)
 	srv := services.NewUserService(repo, redis)

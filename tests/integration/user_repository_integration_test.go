@@ -4,6 +4,7 @@ import (
 	"context"
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
 	testhelpers "go-ecommerce/internal/test_helpers"
+	"go-ecommerce/internal/test_helpers/test_containers"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ func Test_UserRepo_With_Postgres_Container(t *testing.T) {
 	ctx := context.Background()
 
 	// init postgres container
-	cont, err := testhelpers.NewPostgresContainerDB(t)
+	cont, err := test_containers.NewPostgresContainerDB(t)
 	require.NoError(t, err)
 	defer cont.Container.Terminate(ctx)
 

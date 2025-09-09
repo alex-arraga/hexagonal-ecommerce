@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"go-ecommerce/internal/adapters/api/http/handlers"
 	"go-ecommerce/internal/adapters/api/http/routes"
+	"go-ecommerce/internal/test_helpers/test_containers"
 
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
 	"go-ecommerce/internal/core/services"
 	"go-ecommerce/internal/core/utils"
-	testhelpers "go-ecommerce/internal/test_helpers"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,12 +25,12 @@ func Test_UserE2E(t *testing.T) {
 	ctx := context.Background()
 
 	// init postgres container
-	postgresCont, err := testhelpers.NewPostgresContainerDB(t)
+	postgresCont, err := test_containers.NewPostgresContainerDB(t)
 	require.NoError(t, err)
 	defer postgresCont.Container.Terminate(ctx)
 
 	// init redis container
-	redisCont, err := testhelpers.NewRedisContainer(t)
+	redisCont, err := test_containers.NewRedisContainer(t)
 	require.NoError(t, err)
 	defer redisCont.Container.Terminate(ctx)
 
