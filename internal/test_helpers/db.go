@@ -71,6 +71,7 @@ func NewPostgresContainerDB(t *testing.T) (*PostgresContainer, error) {
 		return nil, err
 	}
 
+	// mapping host and port of container with postgres db
 	port, err := postgresC.MappedPort(ctx, "5432/tcp")
 	if err != nil {
 		slog.Error("error obtaining port", "error", err)
@@ -83,6 +84,7 @@ func NewPostgresContainerDB(t *testing.T) (*PostgresContainer, error) {
 		return nil, err
 	}
 
+	// connect to database
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port.Port(), dbUser, dbPassword, dbName)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
