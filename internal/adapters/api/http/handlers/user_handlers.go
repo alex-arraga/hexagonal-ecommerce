@@ -73,5 +73,5 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpdtos.RespondJSON(w, http.StatusOK, "User successfully registered", user)
+	httpdtos.RespondJSON(w, http.StatusCreated, "User successfully registered", user)
 }

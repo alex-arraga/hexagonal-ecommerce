@@ -1,0 +1,120 @@
+package e2e
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"go-ecommerce/internal/adapters/api/http/handlers"
+	"go-ecommerce/internal/adapters/api/http/routes"
+
+	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
+	"go-ecommerce/internal/core/services"
+	"go-ecommerce/internal/core/utils"
+	testhelpers "go-ecommerce/internal/test_helpers"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func Test_UserE2E(t *testing.T) {
+	ctx := context.Background()
+
+	// init postgres container
+	postgresCont, err := testhelpers.NewPostgresContainerDB(t)
+	require.NoError(t, err)
+	defer postgresCont.Container.Terminate(ctx)
+
+	// init redis container
+	redisCont, err := testhelpers.NewRedisContainer(t)
+	require.NoError(t, err)
+	defer redisCont.Container.Terminate(ctx)
+
+	// init transaction
+	tx := postgresCont.DB.Begin()
+	t.Cleanup(func() { tx.Rollback() })
+
+	// dependency injection
+	repo := repository.NewUserRepo(tx)
+	srv := services.NewUserService(repo, redisCont.Client)
+	handler := handlers.NewUserHandler(srv)
+
+	r := chi.NewRouter()
+	routes.LoadUserRoutes(r, handler)
+
+	server := httptest.NewServer(r)
+	defer server.Close()
+
+	// --------------------
+	// Step 1 - Create user by POST
+	// --------------------
+	payload := map[string]string{
+		"name":     "John",
+		"password": "password",
+		"email":    "john@mail.test",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	serverUrl := fmt.Sprintf("%s/user", server.URL)
+	contentType := "application/json"
+
+	// http post
+	resp, err := http.Post(serverUrl, contentType, bytes.NewBuffer(body))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	var createdUser map[string]any
+	json.NewDecoder(resp.Body).Decode(&createdUser)
+
+	data := createdUser["data"].(map[string]any) // assert para convertir "data"
+	userID := data["ID"]
+
+	assert.Equal(t, payload["name"], data["Name"])
+	assert.Equal(t, payload["email"], data["Email"])
+
+	// --------------------
+	// Step 3 - Validate that caching in redis
+	// --------------------
+	var user map[string]any
+
+	cacheKey := utils.GenerateCacheKey("user", userID)
+	val, err := redisCont.Client.Get(ctx, cacheKey)
+	require.NoError(t, err)
+
+	err = utils.Deserialize(val, &user)
+	require.NoError(t, err)
+
+	assert.Contains(t, user["Name"], payload["Name"])
+	assert.Contains(t, user["Email"], payload["Email"])
+}
+
+/*
+
+// --------------------
+TODO Step 2 - Get user by GET
+// --------------------
+serverUrlWithParam := fmt.Sprintf("%s/user/%s", server.URL, userID)
+
+getResp, err := http.Get(serverUrlWithParam)
+require.NoError(t, err)
+
+assert.Equal(t, http.StatusOK, getResp.StatusCode)
+
+// read body
+var fetchedUser map[string]any
+
+bodyBytes, err := io.ReadAll(getResp.Body)
+require.NoError(t, err)
+json.Unmarshal(bodyBytes, &fetchedUser)
+
+assert.Equal(t, userID, fetchedUser["id"])
+assert.Equal(t, payload["name"], fetchedUser["Name"])
+assert.Equal(t, payload["email"], fetchedUser["Email"])
+*/
