@@ -37,7 +37,7 @@ func Test_UserService_Register(t *testing.T) {
 	srv := newRepoServices(t)
 
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
-	registered, err := srv.Register(ctx, u)
+	registered, err := srv.Register(ctx, u.Name, u.Email, u.Password, u.Role)
 	require.NoError(t, err)
 
 	assert.Equal(t, u.Name, registered.Name)

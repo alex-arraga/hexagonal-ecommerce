@@ -19,13 +19,13 @@ import (
 
 func Test_UserHandler_Register(t *testing.T) {
 	mockUserService := &mocks.MockUserService{
-		RegisterFunc: func(ctx context.Context, user *domain.User) (*domain.User, error) {
+		RegisterFunc: func(ctx context.Context, name, email, password string, role domain.UserRole) (*domain.User, error) {
 			return &domain.User{
 				ID:        uuid.New(),
-				Name:      "John",
-				Email:     "john@mail.test",
-				Password:  "password",
-				Role:      domain.Client,
+				Name:      name,
+				Email:     email,
+				Password:  password,
+				Role:      role,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			}, nil

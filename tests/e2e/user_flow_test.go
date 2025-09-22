@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go-ecommerce/internal/adapters/api/http/handlers"
 	"go-ecommerce/internal/adapters/api/http/routes"
+	"go-ecommerce/internal/adapters/security"
 	"go-ecommerce/internal/test_helpers/test_containers"
 
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
@@ -21,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// ! Run docker demon to execute these tests
 func Test_UserE2E(t *testing.T) {
 	ctx := context.Background()
 
@@ -38,9 +40,11 @@ func Test_UserE2E(t *testing.T) {
 	tx := postgresCont.DB.Begin()
 	t.Cleanup(func() { tx.Rollback() })
 
+	hasher := &security.Hasher{}
+
 	// dependency injection
 	repo := repository.NewUserRepo(tx)
-	srv := services.NewUserService(repo, redisCont.Client)
+	srv := services.NewUserService(repo, redisCont.Client, hasher)
 	handler := handlers.NewUserHandler(srv)
 
 	r := chi.NewRouter()

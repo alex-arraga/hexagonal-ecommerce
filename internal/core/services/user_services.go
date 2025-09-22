@@ -24,7 +24,7 @@ func NewUserService(repo ports.UserRepository, cache ports.CacheRepository, hash
 // Register creates a new user
 func (us *UserService) Register(ctx context.Context, name, email, password string, role domain.UserRole) (*domain.User, error) {
 	// create user domain entity applying business rules
-	u, err := domain.NewUser(email, name, password, role, us.hasher)
+	u, err := domain.NewUser(name, email, password, role, us.hasher)
 	if err != nil {
 		return nil, err
 	}
