@@ -19,3 +19,15 @@ var (
 	ErrCategoryNameIsRequire = errors.New("name of category is required")
 	ErrCategoryNotFound      = errors.New("category not found")
 )
+
+var (
+	// Product errors
+	ErrProductStockIsRequire    = errors.New("stock of product is required")
+	ErrProductPriceIsRequire    = errors.New("price of product is required")
+	ErrProductImageIsRequire    = errors.New("image of product is required")
+	ErrProductCategoryIsRequire = errors.New("category of product is required")
+	ErrProductSKUIsRequire      = errors.New("sku of product is required")
+	ErrProductNameIsRequire     = errors.New("name of category is required")
+	ErrProductMinLenghtName     = errors.New("name of product must have at least 3 characters")
+	ErrProductNotFound          = errors.New("category not found")
+)
