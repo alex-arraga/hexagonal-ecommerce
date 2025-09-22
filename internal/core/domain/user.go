@@ -36,6 +36,18 @@ type User struct {
 
 // NewUser creates a new user applying the bussiness rules
 func NewUser(name, email, password string, role UserRole, hasher PasswordHasher) (*User, error) {
+	if len(name) == 0 {
+		return nil, ErrNameIsRequire
+	}
+
+	if len(email) == 0 {
+		return nil, ErrEmailIsRequire
+	}
+
+	if len(password) == 0 {
+		return nil, ErrPasswordIsRequire
+	}
+
 	if len(name) < minNameLength {
 		return nil, ErrMinLenghtName
 	}
