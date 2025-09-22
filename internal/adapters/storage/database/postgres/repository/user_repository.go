@@ -43,7 +43,7 @@ func (repo *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 
 	if result := repo.db.WithContext(ctx).First(&dbUser, "id = ?", id); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, result.Error
+			return nil, domain.ErrUserNotFound
 		}
 		return nil, result.Error
 	}
@@ -57,6 +57,9 @@ func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*domain
 	var dbUser *models.UserModel
 
 	if result := repo.db.WithContext(ctx).First(&dbUser, "email = ?", email); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrUserNotFound
+		}
 		return nil, result.Error
 	}
 
