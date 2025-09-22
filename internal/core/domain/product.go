@@ -59,7 +59,6 @@ func NewProduct(name, sku, image string, stock int64, price float64, categoryID 
 
 	now := time.Now()
 	return &Product{
-		ID:         uuid.New(),
 		CategoryID: categoryID,
 		SKU:        sku,
 		Name:       name,
