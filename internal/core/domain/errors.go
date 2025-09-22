@@ -13,3 +13,9 @@ var (
 	ErrRoleIsInvalid     = errors.New("invalid user role")
 	ErrHashingPassword   = errors.New("error hashing password")
 )
+
+var (
+	// Category errors
+	ErrCategoryNameIsRequire = errors.New("name of category is required")
+	ErrCategoryNotFound      = errors.New("category not found")
+)
