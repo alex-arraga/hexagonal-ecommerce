@@ -12,6 +12,7 @@ var (
 	ErrRoleIsRequire     = errors.New("role is required")
 	ErrRoleIsInvalid     = errors.New("invalid user role")
 	ErrHashingPassword   = errors.New("error hashing password")
+	ErrUserNotFound      = errors.New("user not found")
 )
 
 var (
