@@ -85,6 +85,8 @@ func Close() {
 func Migrate(db *gorm.DB) error {
 	err := automigrateSchemas(db,
 		&models.UserModel{},
+		&models.CategoryModel{},
+		&models.ProductModel{},
 	)
 	if err != nil {
 		return err
