@@ -1,9 +1,11 @@
-package utils
+package security
 
 import "golang.org/x/crypto/bcrypt"
 
-// HashPassword hashes input password using bcrypt
-func HashPassword(password string) (string, error) {
+type Hasher struct{}
+
+// Hash hashes input password using bcrypt
+func (h *Hasher) Hash(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
@@ -13,6 +15,6 @@ func HashPassword(password string) (string, error) {
 }
 
 // ComparePassword compares input password with hashed password
-func ComparePassword(password, hashedPassword string) error {
+func (h *Hasher) ComparePassword(password, hashedPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }

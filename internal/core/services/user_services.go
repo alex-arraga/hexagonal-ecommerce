@@ -5,35 +5,28 @@ import (
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"go-ecommerce/internal/core/utils"
-
-	"github.com/google/uuid"
 )
 
 type UserService struct {
-	repo  ports.UserRepository
-	cache ports.CacheRepository
+	repo   ports.UserRepository
+	cache  ports.CacheRepository
+	hasher domain.PasswordHasher
 }
 
-func NewUserService(repo ports.UserRepository, cache ports.CacheRepository) ports.UserService {
+func NewUserService(repo ports.UserRepository, cache ports.CacheRepository, hasher domain.PasswordHasher) ports.UserService {
 	return &UserService{
-		repo:  repo,
-		cache: cache,
+		repo:   repo,
+		cache:  cache,
+		hasher: hasher,
 	}
 }
 
 // Register creates a new user
 func (us *UserService) Register(ctx context.Context, user *domain.User) (*domain.User, error) {
-	// hashing password
-	hashedPassword, err := utils.HashPassword(user.Password)
+	// create user domain entity applying business rules
+	u, err := domain.NewUser(user.Email, user.Name, user.Password, user.Role, us.hasher)
 	if err != nil {
-		return nil, domain.ErrInternal
-	}
-
-	u := &domain.User{
-		ID:       uuid.New(),
-		Name:     user.Name,
-		Password: hashedPassword,
-		Email:    user.Email,
+		return nil, err
 	}
 
 	user, err = us.repo.CreateUser(ctx, u)

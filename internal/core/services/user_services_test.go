@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"go-ecommerce/internal/adapters/security"
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
 	"go-ecommerce/internal/core/ports"
 	"go-ecommerce/internal/core/services"
@@ -21,9 +22,10 @@ func newRepoServices(t *testing.T) ports.UserService {
 	t.Cleanup(func() { tx.Rollback() })
 
 	redis := mocks.NewMockRedis()
+	hasher := &security.Hasher{}
 
 	repo := repository.NewUserRepo(tx)
-	srv := services.NewUserService(repo, redis)
+	srv := services.NewUserService(repo, redis, hasher)
 
 	return srv
 }

@@ -6,6 +6,7 @@ import (
 	"go-ecommerce/internal/adapters/api/http/routes"
 	"go-ecommerce/internal/adapters/config"
 	"go-ecommerce/internal/adapters/logger"
+	"go-ecommerce/internal/adapters/security"
 	"go-ecommerce/internal/adapters/storage/cache/redis"
 	"go-ecommerce/internal/adapters/storage/database/postgres"
 	"go-ecommerce/internal/core/services"
@@ -57,9 +58,11 @@ func main() {
 	defer cache.Close()
 	slog.Info("Successfully connected to the cache server")
 
+	hasher := &security.Hasher{}
+
 	// dependency injection
 	userRepo := repository.NewUserRepo(db)
-	userSrv := services.NewUserService(userRepo, cache)
+	userSrv := services.NewUserService(userRepo, cache, hasher)
 	userHandler := handlers.NewUserHandler(userSrv)
 
 	// router and load routes
