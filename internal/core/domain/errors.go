@@ -30,5 +30,6 @@ var (
 	ErrProductSKUIsRequire      = errors.New("sku of product is required")
 	ErrProductNameIsRequire     = errors.New("name of category is required")
 	ErrProductMinLenghtName     = errors.New("name of product must have at least 3 characters")
+	ErrProductMinLenghtSKU      = errors.New("sku of product must have at least 3 characters")
 	ErrProductNotFound          = errors.New("category not found")
 )

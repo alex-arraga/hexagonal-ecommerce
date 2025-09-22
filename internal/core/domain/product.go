@@ -6,14 +6,16 @@ import (
 	"github.com/google/uuid"
 )
 
-const ( // Product errors
+// Product rules
+const (
 	minProductNameLength = 3
+	minProductSKULength  = 3
 )
 
 type Product struct {
-	ID         uint64
+	ID         uuid.UUID
 	CategoryID uint64
-	SKU        uuid.UUID
+	SKU        string
 	Name       string
 	Stock      int64
 	Price      float64
@@ -23,13 +25,9 @@ type Product struct {
 	Category   *Category
 }
 
-func NewProduct(categoryID uint64, name string, stock int64, price float64, image string) (*Product, error) {
+func NewProduct(name, sku, image string, stock int64, price float64, categoryID uint64) (*Product, error) {
 	if len(name) == 0 {
 		return nil, ErrProductNameIsRequire
-	}
-
-	if len(name) < minProductNameLength {
-		return nil, ErrProductMinLenghtName
 	}
 
 	if stock <= 0 {
@@ -40,6 +38,9 @@ func NewProduct(categoryID uint64, name string, stock int64, price float64, imag
 		return nil, ErrProductPriceIsRequire
 	}
 
+	if len(sku) == 0 {
+		return nil, ErrProductSKUIsRequire
+	}
 	if len(image) == 0 {
 		return nil, ErrProductImageIsRequire
 	}
@@ -48,10 +49,19 @@ func NewProduct(categoryID uint64, name string, stock int64, price float64, imag
 		return nil, ErrProductCategoryIsRequire
 	}
 
+	if len(name) < minProductNameLength {
+		return nil, ErrProductMinLenghtName
+	}
+
+	if len(sku) < minProductSKULength {
+		return nil, ErrProductMinLenghtSKU
+	}
+
 	now := time.Now()
 	return &Product{
+		ID:         uuid.New(),
 		CategoryID: categoryID,
-		SKU:        uuid.New(),
+		SKU:        sku,
 		Name:       name,
 		Stock:      stock,
 		Price:      price,
