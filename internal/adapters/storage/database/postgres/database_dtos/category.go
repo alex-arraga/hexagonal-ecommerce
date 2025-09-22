@@ -5,7 +5,7 @@ import (
 	"go-ecommerce/internal/core/domain"
 )
 
-// domain.User -> DB model
+// domain.Category -> DB model
 func ConvertCategoryDomainToModel(category *domain.Category) *models.CategoryModel {
 	return &models.CategoryModel{
 		ID:        category.ID,
@@ -15,7 +15,7 @@ func ConvertCategoryDomainToModel(category *domain.Category) *models.CategoryMod
 	}
 }
 
-// domain.Users -> DB models
+// domain.Categories -> DB models
 func ConvertCategoriesDomainToModels(categories []*domain.Category) []*models.CategoryModel {
 	var categoriesModels []*models.CategoryModel
 
@@ -31,7 +31,7 @@ func ConvertCategoriesDomainToModels(categories []*domain.Category) []*models.Ca
 	return categoriesModels
 }
 
-// DB model -> domain.User
+// DB model -> domain.Category
 func ConvertCategoryModelToDomain(categoryModel *models.CategoryModel) *domain.Category {
 	return &domain.Category{
 		ID:        categoryModel.ID,
@@ -41,7 +41,7 @@ func ConvertCategoryModelToDomain(categoryModel *models.CategoryModel) *domain.C
 	}
 }
 
-// DB models -> domain.Users
+// DB models -> domain.Categories
 func ConvertCategoriesModelsToDomain(categoryModels []*models.CategoryModel) []*domain.Category {
 	var domainCategories []*domain.Category
 
