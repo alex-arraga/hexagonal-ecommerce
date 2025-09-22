@@ -22,14 +22,14 @@ func NewUserService(repo ports.UserRepository, cache ports.CacheRepository, hash
 }
 
 // Register creates a new user
-func (us *UserService) Register(ctx context.Context, user *domain.User) (*domain.User, error) {
+func (us *UserService) Register(ctx context.Context, name, email, password string, role domain.UserRole) (*domain.User, error) {
 	// create user domain entity applying business rules
-	u, err := domain.NewUser(user.Email, user.Name, user.Password, user.Role, us.hasher)
+	u, err := domain.NewUser(email, name, password, role, us.hasher)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err = us.repo.CreateUser(ctx, u)
+	createdUser, err := us.repo.CreateUser(ctx, u)
 	if err != nil {
 		if err == domain.ErrConflictingData {
 			return nil, err
@@ -38,8 +38,8 @@ func (us *UserService) Register(ctx context.Context, user *domain.User) (*domain
 	}
 
 	// generate cache key and setting with the user data
-	cacheKey := utils.GenerateCacheKey("user", user.ID)
-	userSerialized, err := utils.Serialize(user)
+	cacheKey := utils.GenerateCacheKey("user", createdUser.ID)
+	userSerialized, err := utils.Serialize(createdUser)
 	if err != nil {
 		return nil, domain.ErrInternal
 	}
@@ -55,5 +55,5 @@ func (us *UserService) Register(ctx context.Context, user *domain.User) (*domain
 		return nil, domain.ErrInternal
 	}
 
-	return user, nil
+	return createdUser, nil
 }

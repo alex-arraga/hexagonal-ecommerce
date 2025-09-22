@@ -22,6 +22,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Role     string `json:"role,omitempty"`
 	}
 
 	params, err := utils.ParseRequestBody[parameters](r)
@@ -43,31 +44,18 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	role := domain.Client
+	if params.Role != "" {
+		role = domain.UserRole(params.Role)
+	}
+
 	// Validating if email format is valid
 	if isValid := utils.IsValidEmail(params.Email); !isValid {
 		httpdtos.RespondError(w, http.StatusBadRequest, "Invalid email format")
 		return
 	}
 
-	// Validate len of password
-	if len(params.Name) < 3 {
-		httpdtos.RespondError(w, http.StatusBadRequest, "The name must contain at least 3 characters")
-		return
-	}
-
-	// Validate len of password
-	if len(params.Password) < 6 {
-		httpdtos.RespondError(w, http.StatusBadRequest, "The password must contain at least 6 characters")
-		return
-	}
-
-	u := &domain.User{
-		Name:     params.Name,
-		Email:    params.Email,
-		Password: params.Password,
-	}
-
-	user, err := h.us.Register(r.Context(), u)
+	user, err := h.us.Register(r.Context(), params.Name, params.Email, params.Password, role)
 	if err != nil {
 		httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Error creating user: %v", err))
 		return
