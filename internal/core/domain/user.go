@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,26 +36,26 @@ type User struct {
 
 // NewUser creates a new user applying the bussiness rules
 func NewUser(name, email, password string, role UserRole, hasher PasswordHasher) (*User, error) {
-	if role != Admin && role != Client && role != Seller {
-		return nil, errors.New("role is required")
-	}
-
 	if len(name) < minNameLength {
-		return nil, errors.New("name must have at least 3 characters")
+		return nil, ErrMinLenghtName
 	}
 
 	if len(password) < minPasswordLength {
-		return nil, errors.New("password must have at least 6 characters")
+		return nil, ErrMinLenghtPassword
+	}
+
+	if len(role) == 0 {
+		return nil, ErrRoleIsRequire
 	}
 
 	if role != Admin && role != Client && role != Seller {
-		return nil, errors.New("invalid user role")
+		return nil, ErrRoleIsInvalid
 	}
 
 	// hash password with the provided hasher
 	hashedPassword, err := hasher.Hash(password)
 	if err != nil {
-		return nil, errors.New("could not hash password")
+		return nil, ErrHashingPassword
 	}
 
 	now := time.Now()
