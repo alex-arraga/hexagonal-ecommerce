@@ -8,11 +8,12 @@ import (
 	"go-ecommerce/internal/adapters/api/http/handlers"
 	"go-ecommerce/internal/adapters/api/http/routes"
 	"go-ecommerce/internal/adapters/security"
+	"go-ecommerce/internal/adapters/shared/encoding"
 	"go-ecommerce/internal/test_helpers/test_containers"
 
+	"go-ecommerce/internal/adapters/storage/cache/redis"
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
 	"go-ecommerce/internal/core/services"
-	"go-ecommerce/internal/core/utils"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -88,11 +89,11 @@ func Test_UserE2E(t *testing.T) {
 	// --------------------
 	var user map[string]any
 
-	cacheKey := utils.GenerateCacheKey("user", userID)
+	cacheKey := redis.GenerateCacheKey("user", userID)
 	val, err := redisCont.Client.Get(ctx, cacheKey)
 	require.NoError(t, err)
 
-	err = utils.Deserialize(val, &user)
+	err = encoding.Deserialize(val, &user)
 	require.NoError(t, err)
 
 	assert.Contains(t, user["Name"], payload["Name"])

@@ -2,9 +2,10 @@ package services
 
 import (
 	"context"
+	"go-ecommerce/internal/adapters/shared/encoding"
+	"go-ecommerce/internal/adapters/storage/cache/redis"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
-	"go-ecommerce/internal/core/utils"
 )
 
 type UserService struct {
@@ -38,8 +39,8 @@ func (us *UserService) Register(ctx context.Context, name, email, password strin
 	}
 
 	// generate cache key and setting with the user data
-	cacheKey := utils.GenerateCacheKey("user", createdUser.ID)
-	userSerialized, err := utils.Serialize(createdUser)
+	cacheKey := redis.GenerateCacheKey("user", createdUser.ID)
+	userSerialized, err := encoding.Serialize(createdUser)
 	if err != nil {
 		return nil, domain.ErrInternal
 	}
