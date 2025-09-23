@@ -15,7 +15,7 @@ type CategoryRepo struct {
 	db *gorm.DB
 }
 
-func (r *CategoryRepo) NewCategoryRepo(db *gorm.DB) ports.CategoryRepository {
+func NewCategoryRepo(db *gorm.DB) ports.CategoryRepository {
 	return &CategoryRepo{db: db}
 }
 

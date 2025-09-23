@@ -61,11 +61,23 @@ func main() {
 	hasher := &security.Hasher{}
 
 	// dependency injection
+
+	// users
 	userRepo := repository.NewUserRepo(db)
 	userSrv := services.NewUserService(userRepo, cache, hasher)
 	userHandler := handlers.NewUserHandler(userSrv)
 
-	// router and load routes
+	// categories
+	catRepo := repository.NewCategoryRepo(db)
+	catSrv := services.NewCategoryService(catRepo, cache)
+	catHandler := handlers.NewCategoryHandler(catSrv)
+
+	// products
+	prodRepo := repository.NewProductRepo(db)
+	prodSrv := services.NewProductService(prodRepo, cache)
+	prodHandler := handlers.NewProductHandler(prodSrv)
+
+	// root router
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(cors.Options{
@@ -75,7 +87,10 @@ func main() {
 		MaxAge:         300,
 	}))
 
+	// load all routes
 	routes.LoadUserRoutes(router, userHandler)
+	routes.LoadCategoryRoutes(router, catHandler)
+	routes.LoadProductRoutes(router, prodHandler)
 
 	// Configurar servidor HTTP
 	s := &http.Server{
