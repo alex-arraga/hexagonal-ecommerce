@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"go-ecommerce/internal/adapters/shared/encoding"
 	cachekeys "go-ecommerce/internal/adapters/storage/cache/cache_keys"
 	cachettl "go-ecommerce/internal/adapters/storage/cache/cache_ttl"
@@ -110,7 +111,31 @@ func (ps *ProductService) GetProductById(ctx context.Context, id uuid.UUID) (*do
 
 // ListProducts implements ports.ProductService.
 func (ps *ProductService) ListProducts(ctx context.Context) ([]*domain.Product, error) {
-	panic("unimplemented")
+	// check if the products exists in cache
+	values, err := ps.cache.Get(ctx, cachekeys.AllProducts())
+	if err == nil {
+		var products []*domain.Product
+		if decodeErr := json.Unmarshal(values, &products); decodeErr != nil {
+			return products, nil
+		}
+	}
+
+	// find products in repository
+	products, err := ps.repo.ListProducts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// serialize products
+	productsSerialized, err := json.Marshal(products)
+	if err != nil {
+		return nil, err
+	}
+
+	// set products of repository in cache
+	ps.cache.Set(ctx, cachekeys.AllProducts(), productsSerialized, cachettl.Product)
+
+	return products, nil
 }
 
 // DeleteProduct implements ports.ProductService.
