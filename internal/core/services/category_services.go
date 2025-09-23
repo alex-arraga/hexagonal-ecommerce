@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"go-ecommerce/internal/adapters/shared"
-	"go-ecommerce/internal/adapters/shared/encoding"
 	cachekeys "go-ecommerce/internal/adapters/storage/cache/cache_keys"
 	cachettl "go-ecommerce/internal/adapters/storage/cache/cache_ttl"
 	"go-ecommerce/internal/core/domain"
@@ -37,7 +37,7 @@ func (cs *CategoryService) RegisterCategory(ctx context.Context, name string) (*
 
 	// generate cache key and setting with the user data
 	cacheKey := cachekeys.Category(createdCategory.ID)
-	categorySerialized, err := encoding.Serialize(createdCategory)
+	categorySerialized, err := json.Marshal(createdCategory)
 	if err != nil {
 		return nil, shared.ErrInternal
 	}

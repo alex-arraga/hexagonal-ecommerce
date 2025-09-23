@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"go-ecommerce/internal/adapters/shared/encoding"
 	cachekeys "go-ecommerce/internal/adapters/storage/cache/cache_keys"
 	cachettl "go-ecommerce/internal/adapters/storage/cache/cache_ttl"
 	"go-ecommerce/internal/core/domain"
@@ -67,7 +66,7 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 
 	// create new product cache key and serialize product created or udpated
 	cacheKey := cachekeys.Product(createdProduct.ID.String())
-	productSerialized, err := encoding.Serialize(createdProduct)
+	productSerialized, err := json.Marshal(createdProduct)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func (ps *ProductService) GetProductById(ctx context.Context, id uuid.UUID) (*do
 	val, err := ps.cache.Get(ctx, cacheKey)
 	if err == nil {
 		var product domain.Product
-		if decodeErr := encoding.Deserialize(val, &product); decodeErr != nil {
+		if decodeErr := json.Unmarshal(val, &product); decodeErr != nil {
 			return &product, nil
 		}
 	}

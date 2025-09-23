@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"go-ecommerce/internal/adapters/shared"
-	"go-ecommerce/internal/adapters/shared/encoding"
 	cachekeys "go-ecommerce/internal/adapters/storage/cache/cache_keys"
 	cachettl "go-ecommerce/internal/adapters/storage/cache/cache_ttl"
 	"go-ecommerce/internal/core/domain"
@@ -44,7 +44,7 @@ func (us *UserService) Register(ctx context.Context, name, email, password strin
 
 	// cache the newly created user
 	cacheKey := cachekeys.User(createdUser.ID.String())
-	userSerialized, _ := encoding.Serialize(createdUser)
+	userSerialized, _ := json.Marshal(createdUser)
 	err = us.cache.Set(ctx, cacheKey, userSerialized, cachettl.User)
 	if err != nil {
 		slog.Warn("error caching user", "user_id", createdUser.ID, "error", err)
