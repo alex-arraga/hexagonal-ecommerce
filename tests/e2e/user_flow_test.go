@@ -11,7 +11,7 @@ import (
 	"go-ecommerce/internal/adapters/shared/encoding"
 	"go-ecommerce/internal/test_helpers/test_containers"
 
-	"go-ecommerce/internal/adapters/storage/cache/redis"
+	cachekeys "go-ecommerce/internal/adapters/storage/cache/cache_keys"
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
 	"go-ecommerce/internal/core/services"
 	"net/http"
@@ -89,7 +89,7 @@ func Test_UserE2E(t *testing.T) {
 	// --------------------
 	var user map[string]any
 
-	cacheKey := redis.GenerateCacheKey("user", userID)
+	cacheKey := cachekeys.User(userID.(string))
 	val, err := redisCont.Client.Get(ctx, cacheKey)
 	require.NoError(t, err)
 
