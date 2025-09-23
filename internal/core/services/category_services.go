@@ -4,9 +4,11 @@ import (
 	"context"
 	"go-ecommerce/internal/adapters/shared"
 	"go-ecommerce/internal/adapters/shared/encoding"
-	"go-ecommerce/internal/adapters/storage/cache/redis"
+	cachekeys "go-ecommerce/internal/adapters/storage/cache/cache_keys"
+	cachettl "go-ecommerce/internal/adapters/storage/cache/cache_ttl"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
+	"log/slog"
 )
 
 type CategoryService struct {
@@ -34,21 +36,21 @@ func (cs *CategoryService) RegisterCategory(ctx context.Context, name string) (*
 	}
 
 	// generate cache key and setting with the user data
-	cacheKey := redis.GenerateCacheKey("categories", createdCategory.ID)
+	cacheKey := cachekeys.Category(createdCategory.ID)
 	categorySerialized, err := encoding.Serialize(createdCategory)
 	if err != nil {
 		return nil, shared.ErrInternal
 	}
 
-	err = cs.cache.Set(ctx, cacheKey, categorySerialized, 10)
+	err = cs.cache.Set(ctx, cacheKey, categorySerialized, cachettl.Category)
 	if err != nil {
-		return nil, shared.ErrInternal
+		slog.Warn("error caching category", "category_id", createdCategory.ID, "error", err)
 	}
 
-	// delete all users of the list and update again when impact database
-	err = cs.cache.DeleteByPrefix(ctx, "categories:*")
+	// invalid the cached list of all categories
+	err = cs.cache.Delete(ctx, cachekeys.AllCategories())
 	if err != nil {
-		return nil, shared.ErrInternal
+		slog.Warn("error invalidating list of all categories", "error", err)
 	}
 
 	return createdCategory, nil
