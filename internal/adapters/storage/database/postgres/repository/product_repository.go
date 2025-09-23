@@ -46,6 +46,9 @@ func (pr *ProductRepo) GetProductById(ctx context.Context, id uuid.UUID) (*domai
 	var productDb *models.ProductModel
 
 	if result := pr.db.WithContext(ctx).First(productDb, "id = ?", id); result.Error != nil {
+		if result.RowsAffected == 0 {
+			return nil, domain.ErrProductNotFound
+		}
 		return nil, result.Error
 	}
 

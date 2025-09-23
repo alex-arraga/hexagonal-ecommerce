@@ -88,6 +88,18 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 
 // GetProductById implements ports.ProductService.
 func (ps *ProductService) GetProductById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+	cacheKey := cachekeys.Product(id.String())
+
+	// check if the product exist in cache, if exist return it
+	val, err := ps.cache.Get(ctx, cacheKey)
+	if err == nil {
+		var product domain.Product
+		if decodeErr := encoding.Deserialize(val, &product); decodeErr != nil {
+			return &product, nil
+		}
+	}
+
+	// else find product in repository
 	p, err := ps.repo.GetProductById(ctx, id)
 	if err != nil {
 		return nil, err
