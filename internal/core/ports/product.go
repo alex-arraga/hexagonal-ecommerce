@@ -17,6 +17,7 @@ type ProductRepository interface {
 
 // ProductService is an interface for interacting with product-related business logic
 type SaveProductInputs struct {
+	ID         uuid.UUID
 	Name       string
 	Image      string
 	SKU        string
