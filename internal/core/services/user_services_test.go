@@ -21,7 +21,7 @@ func newRepoServices(t *testing.T) ports.UserService {
 	tx := db.Begin()
 	t.Cleanup(func() { tx.Rollback() })
 
-	redis := mocks.NewMockRedis()
+	redis := mocks.NewUserCacheMock()
 	hasher := &security.Hasher{}
 
 	repo := repository.NewUserRepo(tx)

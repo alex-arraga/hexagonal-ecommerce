@@ -3,19 +3,18 @@ package services
 import (
 	"context"
 	"go-ecommerce/internal/adapters/shared"
-	"go-ecommerce/internal/adapters/shared/encoding"
-	"go-ecommerce/internal/adapters/storage/cache/redis"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
+	"log/slog"
 )
 
 type UserService struct {
 	repo   ports.UserRepository
-	cache  ports.CacheRepository
+	cache  ports.UserCacheRepository
 	hasher domain.PasswordHasher
 }
 
-func NewUserService(repo ports.UserRepository, cache ports.CacheRepository, hasher domain.PasswordHasher) ports.UserService {
+func NewUserService(repo ports.UserRepository, cache ports.UserCacheRepository, hasher domain.PasswordHasher) ports.UserService {
 	return &UserService{
 		repo:   repo,
 		cache:  cache,
@@ -39,22 +38,10 @@ func (us *UserService) Register(ctx context.Context, name, email, password strin
 		return nil, shared.ErrInternal
 	}
 
-	// generate cache key and setting with the user data
-	cacheKey := redis.GenerateCacheKey("user", createdUser.ID)
-	userSerialized, err := encoding.Serialize(createdUser)
+	// Cache the newly created user
+	err = us.cache.SetUser(ctx, createdUser)
 	if err != nil {
-		return nil, shared.ErrInternal
-	}
-
-	err = us.cache.Set(ctx, cacheKey, userSerialized, 0)
-	if err != nil {
-		return nil, shared.ErrInternal
-	}
-
-	// delete all users of the list and update again when impact database
-	err = us.cache.DeleteByPrefix(ctx, "users:*")
-	if err != nil {
-		return nil, shared.ErrInternal
+		slog.Warn("failed tu cache newly user", "error", err)
 	}
 
 	return createdUser, nil
