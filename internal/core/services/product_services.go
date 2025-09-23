@@ -2,8 +2,12 @@ package services
 
 import (
 	"context"
+	"go-ecommerce/internal/adapters/shared/encoding"
+	cachekeys "go-ecommerce/internal/adapters/storage/cache/cache_keys"
+	cachettl "go-ecommerce/internal/adapters/storage/cache/cache_ttl"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
+	"log/slog"
 
 	"github.com/google/uuid"
 )
@@ -38,7 +42,7 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 			return nil, err
 		}
 		product = newProduct
-		
+
 	} else {
 		product, err := ps.repo.GetProductById(ctx, inputs.ID)
 		if err != nil {
@@ -55,17 +59,41 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 		)
 	}
 
-	result, err := ps.repo.SaveProduct(ctx, product)
+	createdProduct, err := ps.repo.SaveProduct(ctx, product)
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	// create new product cache key and serialize product created or udpated
+	cacheKey := cachekeys.Product(createdProduct.ID.String())
+	productSerialized, err := encoding.Serialize(createdProduct)
+	if err != nil {
+		return nil, err
+	}
+
+	// set product in cache
+	err = ps.cache.Set(ctx, cacheKey, productSerialized, cachettl.Product)
+	if err != nil {
+		slog.Warn("error caching new created product", "product_id", createdProduct.ID, "error", err)
+	}
+
+	// invalidate product list
+	err = ps.cache.Delete(ctx, cachekeys.AllProducts())
+	if err != nil {
+		slog.Warn("error invalidating list of all products", "error", err)
+	}
+
+	return createdProduct, nil
 }
 
 // GetProductById implements ports.ProductService.
 func (ps *ProductService) GetProductById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
-	panic("unimplemented")
+	p, err := ps.repo.GetProductById(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 // ListProducts implements ports.ProductService.
