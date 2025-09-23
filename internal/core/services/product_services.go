@@ -115,5 +115,21 @@ func (ps *ProductService) ListProducts(ctx context.Context) ([]*domain.Product, 
 
 // DeleteProduct implements ports.ProductService.
 func (ps *ProductService) DeleteProduct(ctx context.Context, id uuid.UUID) error {
-	panic("unimplemented")
+	err := ps.repo.DeleteProduct(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	cacheKey := cachekeys.Product(id.String())
+	err = ps.cache.Delete(ctx, cacheKey)
+	if err != nil {
+		slog.Warn("error deleteing product of cache", "product_id", id, "error", err)
+	}
+
+	err = ps.cache.Delete(ctx, cachekeys.AllProducts())
+	if err != nil {
+		slog.Warn("error invalidating list of all products", "error", err)
+	}
+
+	return nil
 }
