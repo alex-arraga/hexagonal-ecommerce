@@ -59,14 +59,14 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 		)
 	}
 
-	createdProduct, err := ps.repo.SaveProduct(ctx, product)
+	result, err := ps.repo.SaveProduct(ctx, product)
 	if err != nil {
 		return nil, err
 	}
 
 	// create new product cache key and serialize product created or udpated
-	cacheKey := cachekeys.Product(createdProduct.ID.String())
-	productSerialized, err := json.Marshal(createdProduct)
+	cacheKey := cachekeys.Product(result.ID.String())
+	productSerialized, err := json.Marshal(result)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 	// set product in cache
 	err = ps.cache.Set(ctx, cacheKey, productSerialized, cachettl.Product)
 	if err != nil {
-		slog.Warn("error caching new created product", "product_id", createdProduct.ID, "error", err)
+		slog.Warn("error caching new product created", "product_id", result.ID, "error", err)
 	}
 
 	// invalidate product list
@@ -83,7 +83,7 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 		slog.Warn("error invalidating list of all products", "error", err)
 	}
 
-	return createdProduct, nil
+	return result, nil
 }
 
 // GetProductById implements ports.ProductService.
