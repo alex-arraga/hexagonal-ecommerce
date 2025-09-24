@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type ProductModel struct {
@@ -16,6 +17,14 @@ type ProductModel struct {
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 
-	CategoryID uint64        `gorm:"not null"`
-	Category   CategoryModel `gorm:"foreignKey:CategoryID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	CategoryID uint64         `gorm:"not null"`
+	Category   *CategoryModel `gorm:"foreignKey:CategoryID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+}
+
+// This function will be executed before to create a new product model
+func (p *ProductModel) BeforeCreate(tx *gorm.DB) (err error) {
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
+	}
+	return
 }

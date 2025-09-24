@@ -35,6 +35,14 @@ func (ph *ProductHandler) SaveProduct(r *http.Request, w http.ResponseWriter) {
 		return
 	}
 
+	// set id to avoid panic
+	var id uuid.UUID
+	if params.ID == nil {
+		id = uuid.Nil
+	} else {
+		id = *params.ID
+	}
+
 	if *params.Name == "" || params.Name == nil {
 		httpdtos.RespondError(w, http.StatusBadRequest, "Name is required")
 		return
@@ -62,7 +70,7 @@ func (ph *ProductHandler) SaveProduct(r *http.Request, w http.ResponseWriter) {
 
 	// mapping the parameters with inputs required for save a product
 	inputs := ports.SaveProductInputs{
-		ID:         *params.ID,
+		ID:         id,
 		Name:       *params.Name,
 		Image:      *params.Image,
 		SKU:        *params.SKU,
@@ -74,12 +82,15 @@ func (ph *ProductHandler) SaveProduct(r *http.Request, w http.ResponseWriter) {
 	product, err := ph.srv.SaveProduct(r.Context(), inputs)
 	if err != nil {
 		httpdtos.RespondError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	// if the user send a update request, respond "ok = 200", else response "created = 201"
 	if params.ID != nil {
 		httpdtos.RespondJSON(w, http.StatusOK, "Product successfully updated", product)
+		return
 	} else {
 		httpdtos.RespondJSON(w, http.StatusCreated, "Product successfully created", product)
+		return
 	}
 }

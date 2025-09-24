@@ -17,7 +17,6 @@ func ConvertProductDomainToModel(p *domain.Product) *models.ProductModel {
 		CreatedAt:  p.CreatedAt,
 		UpdatedAt:  p.UpdatedAt,
 		CategoryID: p.CategoryID,
-		Category:   *ConvertCategoryDomainToModel(p.Category),
 	}
 }
 
@@ -36,7 +35,6 @@ func ConvertProductsDomainToModels(products []*domain.Product) []*models.Product
 			CreatedAt:  p.CreatedAt,
 			UpdatedAt:  p.UpdatedAt,
 			CategoryID: p.CategoryID,
-			Category:   *ConvertCategoryDomainToModel(p.Category),
 		})
 	}
 
@@ -55,7 +53,6 @@ func ConvertProductModelToDomain(p *models.ProductModel) *domain.Product {
 		CreatedAt:  p.CreatedAt,
 		UpdatedAt:  p.UpdatedAt,
 		CategoryID: p.CategoryID,
-		Category:   ConvertCategoryModelToDomain(&p.Category),
 	}
 }
 
@@ -74,7 +71,6 @@ func ConvertProductsModelsToDomain(products []*models.ProductModel) []*domain.Pr
 			CreatedAt:  p.CreatedAt,
 			UpdatedAt:  p.UpdatedAt,
 			CategoryID: p.CategoryID,
-			Category:   ConvertCategoryModelToDomain(&p.Category),
 		})
 	}
 

@@ -59,12 +59,13 @@ func NewProduct(name, sku, image string, stock int64, price float64, categoryID 
 
 	now := time.Now()
 	return &Product{
-		CategoryID: categoryID,
-		SKU:        sku,
+		ID:         uuid.Nil, // repository will asign the id
 		Name:       name,
+		SKU:        sku,
 		Stock:      stock,
 		Price:      price,
 		Image:      image,
+		CategoryID: categoryID,
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}, nil
