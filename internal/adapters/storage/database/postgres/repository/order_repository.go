@@ -23,7 +23,7 @@ func NewOrderRepo(db *gorm.DB) ports.OrderRepository {
 func (or *OrderRepo) SaveOrder(ctx context.Context, order *domain.Order) (*domain.Order, error) {
 	orderDb := database_dtos.ConvertOrderDomainToModel(order)
 
-	// if exist product.ID update, else create new product
+	// if exist order.ID update, else create new order
 	if order.ID != uuid.Nil {
 		if result := or.db.WithContext(ctx).Model(orderDb).Where("id = ?", order.ID).Updates(order); result.Error != nil {
 			if result.RowsAffected == 0 {
