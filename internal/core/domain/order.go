@@ -84,7 +84,7 @@ type NewOrderInputs struct {
 	DisscountTypes *DisscountTypes
 }
 
-func NewOrder(inputs NewOrderInputs) *Order {
+func NewOrder(inputs NewOrderInputs) (*Order, error) {
 	return &Order{
 		ID:                uuid.Nil, // repository will asign the id
 		UserID:            inputs.UserID,
@@ -100,7 +100,7 @@ func NewOrder(inputs NewOrderInputs) *Order {
 		Disscount:         inputs.Disscount,
 		DisscountType:     inputs.DisscountTypes,
 		Total:             inputs.SubTotal - *inputs.Disscount,
-	}
+	}, nil
 }
 
 type UpdateOrderInputs struct {
