@@ -7,5 +7,5 @@ const (
 	Product  = 30 * time.Minute
 	Category = 10 * time.Minute
 	Order    = 20 * time.Minute
-	OrderStatusCart = 5 * time.Minute
+	Cart     = 0 // always is in cache
 )
