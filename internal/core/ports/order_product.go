@@ -12,3 +12,7 @@ type OrderProductRepository interface {
 	GetOrderProductById(ctx context.Context, id uuid.UUID) (*domain.OrderProduct, error)
 	ListOrderProducts(ctx context.Context) ([]*domain.OrderProduct, error)
 }
+
+type OrderProductService interface {
+	AddProductToOrder(ctx context.Context, orderID, productID uuid.UUID, quantity int64) (*domain.OrderProduct, error)
+}
