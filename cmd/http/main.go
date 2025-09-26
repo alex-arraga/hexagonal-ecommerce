@@ -77,8 +77,15 @@ func main() {
 	prodSrv := services.NewProductService(prodRepo, cache)
 	prodHandler := handlers.NewProductHandler(prodSrv)
 
+	// cart
+	cartSrv := services.NewCartService(cache)
+
+	// order-products
+	opRepo := repository.NewOrderProductRepo(db)
+	opSrv := services.NewOrderProductService(opRepo)
+
 	// orders
-	orderRepo := repository.NewOrderRepo(db)
+	orderRepo := repository.NewOrderRepo(cartSrv, opSrv, db)
 	orderSrv := services.NewOrderService(orderRepo, cache)
 	orderHandler := handlers.NewOrderHandler(orderSrv)
 
