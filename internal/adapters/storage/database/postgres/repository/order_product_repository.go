@@ -25,7 +25,7 @@ func (opr *OrderProductRepo) SaveOrderProduct(ctx context.Context, orderProduct 
 
 	// if exist order.ID update, else create new order
 	if orderProduct.ID != uuid.Nil {
-		if result := opr.db.WithContext(ctx).Model(orderProductDb).Where("id = ?", orderProduct.ID).Updates(orderProductDb); result.Error != nil {
+		if result := opr.db.WithContext(ctx).Where("id = ?", orderProduct.ID).Updates(orderProductDb); result.Error != nil {
 			if result.RowsAffected == 0 {
 				return nil, domain.ErrProductNotFound // TODO -> Create new customs errors
 			}

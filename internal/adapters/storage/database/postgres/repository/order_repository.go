@@ -13,12 +13,16 @@ import (
 
 type OrderRepo struct {
 	cart ports.CartService
-	opr  ports.OrderProductRepository
+	ops  ports.OrderProductService
 	db   *gorm.DB
 }
 
-func NewOrderRepo(db *gorm.DB) ports.OrderRepository {
-	return &OrderRepo{db: db}
+func NewOrderRepo(cart ports.CartService, opr ports.OrderProductService, db *gorm.DB) ports.OrderRepository {
+	return &OrderRepo{
+		cart: cart,
+		ops:  opr,
+		db:   db,
+	}
 }
 
 // SaveOrder implements ports.OrderRepository.
@@ -32,7 +36,7 @@ func (or *OrderRepo) SaveOrder(ctx context.Context, order *domain.Order) (*domai
 
 	// if exist order.ID update, else create new order
 	if order.ID != uuid.Nil {
-		if result := or.db.WithContext(ctx).Model(orderDb).Where("id = ?", order.ID).Updates(order); result.Error != nil {
+		if result := or.db.WithContext(ctx).Where("id = ?", order.ID).Updates(orderDb); result.Error != nil {
 			if result.RowsAffected == 0 {
 				return nil, domain.ErrProductNotFound
 			}
@@ -46,12 +50,12 @@ func (or *OrderRepo) SaveOrder(ctx context.Context, order *domain.Order) (*domai
 
 	// creates order-product for each item of cart
 	for _, item := range cart.Items {
-		op := domain.NewOrderProduct(order.ID, item.ProductID, item.Quantity)
-		_, err := or.opr.SaveOrderProduct(ctx, op)
+		op, err := or.ops.AddProductToOrder(ctx, orderDb.ID, item.ProductID, item.Quantity)
 		if err != nil {
 			return nil, err
 		}
-		order.Items = append(order.Items, *op)
+		opModel := database_dtos.ConvertOrderProductDomainToModel(op)
+		orderDb.Items = append(orderDb.Items, *opModel)
 	}
 
 	orderDomain := database_dtos.ConvertOrderModelToDomain(orderDb)

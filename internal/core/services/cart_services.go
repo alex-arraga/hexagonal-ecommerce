@@ -16,7 +16,7 @@ type CartService struct {
 	cache ports.CacheRepository
 }
 
-func NewCart(cache ports.CacheRepository) ports.CartService {
+func NewCartService(cache ports.CacheRepository) ports.CartService {
 	return &CartService{cache: cache}
 }
 

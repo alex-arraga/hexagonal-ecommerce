@@ -25,7 +25,7 @@ func (pr *ProductRepo) SaveProduct(ctx context.Context, product *domain.Product)
 
 	// if exist product.ID update, else create new product
 	if product.ID != uuid.Nil {
-		if result := pr.db.WithContext(ctx).Model(productDb).Where("id = ?", product.ID).Updates(product); result.Error != nil {
+		if result := pr.db.WithContext(ctx).Where("id = ?", product.ID).Updates(productDb); result.Error != nil {
 			if result.RowsAffected == 0 {
 				return nil, domain.ErrProductNotFound
 			}
