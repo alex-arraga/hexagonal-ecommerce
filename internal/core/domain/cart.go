@@ -4,7 +4,7 @@ import "github.com/google/uuid"
 
 type CartItem struct {
 	ProductID uuid.UUID
-	Quantity  int64
+	Quantity  uint8
 }
 
 type Cart struct {
@@ -20,7 +20,7 @@ func NewCart(userID uuid.UUID) *Cart {
 	}
 }
 
-func (c *Cart) AddItem(productId uuid.UUID, quantity int64) {
+func (c *Cart) AddItem(productId uuid.UUID, quantity uint8) {
 	// Check if the item already exists in the cart
 	for i, item := range c.Items {
 		if item.ProductID == productId {

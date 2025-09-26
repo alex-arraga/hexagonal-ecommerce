@@ -60,7 +60,7 @@ func (c *CartService) saveCart(ctx context.Context, cart *domain.Cart) error {
 }
 
 // AddItemToCart implements ports.CartService.
-func (c *CartService) AddItemToCart(ctx context.Context, userId, productId uuid.UUID, quantity int64) error {
+func (c *CartService) AddItemToCart(ctx context.Context, userId, productId uuid.UUID, quantity uint8) error {
 	cart := c.loadCart(ctx, userId)
 	cart.AddItem(productId, quantity)
 	return c.saveCart(ctx, cart)
