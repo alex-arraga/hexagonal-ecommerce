@@ -73,7 +73,7 @@ type Order struct {
 
 	// Relations
 	User  *User
-	Items []*OrderProduct
+	Items []OrderProduct
 }
 
 type NewOrderInputs struct {

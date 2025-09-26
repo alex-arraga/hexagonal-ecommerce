@@ -7,6 +7,18 @@ import (
 
 // domain.Order -> DB model
 func ConvertOrderDomainToModel(o *domain.Order) *models.OrderModel {
+	items := make([]models.OrderProductModel, len(o.Items))
+	for i, item := range o.Items {
+		items[i] = models.OrderProductModel{
+			ID:        item.ID,
+			OrderID:   o.ID,
+			ProductID: item.ProductID,
+			Quantity:  item.Quantity,
+			CreatedAt: item.CreatedAt,
+			UpdatedAt: item.UpdatedAt,
+		}
+	}
+
 	return &models.OrderModel{
 		ID:                o.ID,
 		Providers:         o.Providers,
@@ -25,12 +37,28 @@ func ConvertOrderDomainToModel(o *domain.Order) *models.OrderModel {
 		CreatedAt:         o.CreatedAt,
 		UpdatedAt:         o.UpdatedAt,
 		ExpiresAt:         o.ExpiresAt,
+		Items:             items,
 	}
 }
 
 // domain.Orders -> DB models
 func ConvertOrdersDomainToModels(orders []*domain.Order) []*models.OrderModel {
 	var ordersModels []*models.OrderModel
+
+	var items []models.OrderProductModel
+	for _, o := range orders {
+		items = make([]models.OrderProductModel, len(o.Items))
+		for i, item := range o.Items {
+			items[i] = models.OrderProductModel{
+				ID:        item.ID,
+				OrderID:   o.ID,
+				ProductID: item.ProductID,
+				Quantity:  item.Quantity,
+				CreatedAt: item.CreatedAt,
+				UpdatedAt: item.UpdatedAt,
+			}
+		}
+	}
 
 	for _, o := range orders {
 		ordersModels = append(ordersModels, &models.OrderModel{
@@ -51,6 +79,7 @@ func ConvertOrdersDomainToModels(orders []*domain.Order) []*models.OrderModel {
 			CreatedAt:         o.CreatedAt,
 			UpdatedAt:         o.UpdatedAt,
 			ExpiresAt:         o.ExpiresAt,
+			Items:             items,
 		})
 	}
 
@@ -58,25 +87,38 @@ func ConvertOrdersDomainToModels(orders []*domain.Order) []*models.OrderModel {
 }
 
 // DB model -> domain.Order
-func ConvertOrderModelToDomain(p *models.OrderModel) *domain.Order {
+func ConvertOrderModelToDomain(o *models.OrderModel) *domain.Order {
+	items := make([]domain.OrderProduct, len(o.Items))
+	for i, item := range o.Items {
+		items[i] = domain.OrderProduct{
+			ID:        item.ID,
+			OrderID:   item.OrderID,
+			ProductID: item.ProductID,
+			Quantity:  item.Quantity,
+			CreatedAt: item.CreatedAt,
+			UpdatedAt: item.UpdatedAt,
+		}
+	}
+
 	return &domain.Order{
-		ID:                p.ID,
-		Providers:         p.Providers,
-		UserID:            p.UserID,
-		PaymentID:         p.PaymentID,
-		SecureToken:       p.SecureToken,
-		ExternalReference: p.ExternalReference,
-		Currency:          p.Currency,
-		SubTotal:          p.SubTotal,
-		Disscount:         p.Disscount,
-		DisscountType:     p.DisscountType,
-		Total:             p.Total,
-		Paid:              p.Paid,
-		PayStatus:         p.PayStatus,
-		PayStatusDetail:   p.PayStatusDetail,
-		CreatedAt:         p.CreatedAt,
-		UpdatedAt:         p.UpdatedAt,
-		ExpiresAt:         p.ExpiresAt,
+		ID:                o.ID,
+		Providers:         o.Providers,
+		UserID:            o.UserID,
+		PaymentID:         o.PaymentID,
+		SecureToken:       o.SecureToken,
+		ExternalReference: o.ExternalReference,
+		Currency:          o.Currency,
+		SubTotal:          o.SubTotal,
+		Disscount:         o.Disscount,
+		DisscountType:     o.DisscountType,
+		Total:             o.Total,
+		Paid:              o.Paid,
+		PayStatus:         o.PayStatus,
+		PayStatusDetail:   o.PayStatusDetail,
+		CreatedAt:         o.CreatedAt,
+		UpdatedAt:         o.UpdatedAt,
+		ExpiresAt:         o.ExpiresAt,
+		Items:             items,
 	}
 }
 
@@ -84,6 +126,20 @@ func ConvertOrderModelToDomain(p *models.OrderModel) *domain.Order {
 func ConvertOrdersModelsToDomain(orders []*models.OrderModel) []*domain.Order {
 	var ordersDomain []*domain.Order
 
+	for _, orders := range orders {
+		items := make([]domain.OrderProduct, len(orders.Items))
+		for i, item := range orders.Items {
+			items[i] = domain.OrderProduct{
+				ID:        item.ID,
+				OrderID:   item.OrderID,
+				ProductID: item.ProductID,
+				Quantity:  item.Quantity,
+				CreatedAt: item.CreatedAt,
+				UpdatedAt: item.UpdatedAt,
+			}
+		}
+	}
+	
 	for _, o := range orders {
 		ordersDomain = append(ordersDomain, &domain.Order{
 			ID:                o.ID,

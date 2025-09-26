@@ -16,8 +16,8 @@ type OrderProductModel struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 
 	// Relations
-	Order *OrderModel   `gorm:"foreignKey:OrderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Items *ProductModel `gorm:"foreignKey:ProductID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Order *OrderModel   `gorm:"foreignKey:OrderID;references:ID"`
+	Items *ProductModel `gorm:"foreignKey:ProductID;references:ID"`
 }
 
 // This function will be executed before to create a new order-product model

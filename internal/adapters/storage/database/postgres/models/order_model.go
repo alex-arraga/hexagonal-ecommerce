@@ -28,7 +28,8 @@ type OrderModel struct {
 	ExpiresAt         time.Time               `gorm:"type:timestamp"`
 
 	// Relations
-	User *UserModel `gorm:"foreignKey:UserID;references:ID"`
+	User  *UserModel          `gorm:"foreignKey:UserID;references:ID"`
+	Items []OrderProductModel `gorm:"foreignKey:OrderID;references:ID"`
 }
 
 func (o *OrderModel) BeforeCreate(tx *gorm.DB) (err error) {
