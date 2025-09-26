@@ -11,7 +11,7 @@ type OrderProductModel struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
 	OrderID   uuid.UUID `gorm:"type:uuid;not null"`
 	ProductID uuid.UUID `gorm:"type:uuid;not null"`
-	Quantity  int64     `gorm:"not null"`
+	Quantity  uint8     `gorm:"not null"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 
