@@ -20,7 +20,7 @@ func NewOrderHandler(orderService ports.OrderService) *OrderHandler {
 	return &OrderHandler{srv: orderService}
 }
 
-func (oh *OrderHandler) SaveOrder(w http.ResponseWriter, r *http.Request) {
+func (oh *OrderHandler) SaveOrder(r *http.Request, w http.ResponseWriter) {
 	type parameters struct {
 		ID                *uuid.UUID              `json:"id,omitempty"`
 		Provider          domain.Providers        `json:"provider"`
@@ -50,9 +50,17 @@ func (oh *OrderHandler) SaveOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if r.Method == http.MethodPut && params.ID == nil {
+		http.Error(w, "Method PUT requires the OrderID", http.StatusMethodNotAllowed)
+		return
+	}
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if r.Method == http.MethodPost && params.ID != nil {
+		http.Error(w, "Method POST doesn't accept a OrderID", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -112,7 +120,7 @@ func (oh *OrderHandler) SaveOrder(w http.ResponseWriter, r *http.Request) {
 	httpdtos.RespondJSON(w, http.StatusOK, "Order successfully saved", result)
 }
 
-func (oh *OrderHandler) GetOrderByID(w http.ResponseWriter, r *http.Request) {
+func (oh *OrderHandler) GetOrderByID(r *http.Request, w http.ResponseWriter) {
 	// Verify HTTP method
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
