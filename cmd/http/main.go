@@ -77,6 +77,11 @@ func main() {
 	prodSrv := services.NewProductService(prodRepo, cache)
 	prodHandler := handlers.NewProductHandler(prodSrv)
 
+	// orders
+	orderRepo := repository.NewOrderRepo(db)
+	orderSrv := services.NewOrderService(orderRepo, cache)
+	orderHandler := handlers.NewOrderHandler(orderSrv)
+
 	// root router
 	router := chi.NewRouter()
 
@@ -91,6 +96,7 @@ func main() {
 	routes.LoadUserRoutes(router, userHandler)
 	routes.LoadCategoryRoutes(router, catHandler)
 	routes.LoadProductRoutes(router, prodHandler)
+	routes.LoadOrderRoutes(router, orderHandler)
 
 	// Configurar servidor HTTP
 	s := &http.Server{
