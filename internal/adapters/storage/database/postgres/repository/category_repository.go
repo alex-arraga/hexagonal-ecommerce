@@ -39,16 +39,16 @@ func (r *CategoryRepo) SaveCategory(ctx context.Context, category *domain.Catego
 }
 
 func (r *CategoryRepo) GetCategoryByID(ctx context.Context, id uint64) (*domain.Category, error) {
-	var categoryDb *models.CategoryModel
+	var categoryDb models.CategoryModel
 
-	if result := r.db.WithContext(ctx).Where("id = ?").First(categoryDb); result.Error != nil {
+	if result := r.db.WithContext(ctx).Where("id = ?").First(&categoryDb); result.Error != nil {
 		if result.RowsAffected == 0 {
 			return nil, domain.ErrCategoryNotFound
 		}
 		return nil, result.Error
 	}
 
-	domainCategory := database_dtos.ConvertCategoryModelToDomain(categoryDb)
+	domainCategory := database_dtos.ConvertCategoryModelToDomain(&categoryDb)
 	return domainCategory, nil
 }
 

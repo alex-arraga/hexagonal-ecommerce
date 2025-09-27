@@ -64,25 +64,28 @@ func (cs *CategoryService) GetCategoryByID(ctx context.Context, id uint64) (*dom
 
 	// validate if category is saved in cache
 	data, err := cs.cache.Get(ctx, cacheKey)
-	if err != nil {
-		slog.Warn("error retrieving category from cache")
-	}
-
-	// return from cache
-	if data != nil {
-		var category domain.Category
-		if err := json.Unmarshal(data, &category); err == nil {
-			return &category, nil
+	if err == nil && len(data) > 0 {
+		var category *domain.Category
+		if decodeErr := json.Unmarshal(data, &category); decodeErr == nil {
+			return category, nil
 		}
 	}
 
-	// else find category in repository
-	c, err := cs.repo.GetCategoryByID(ctx, id)
+	// else find category in repository and set in cache
+	category, err := cs.repo.GetCategoryByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return c, nil
+	// set cache
+	serialized, err := json.Marshal(category)
+	if err != nil {
+		slog.Warn("Error marshaling category for cache", "error", err)
+	}
+
+	_ = cs.cache.Set(ctx, cacheKey, serialized, cachettl.Category)
+
+	return category, nil
 }
 
 // ListCategories implements ports.CategoryService.
