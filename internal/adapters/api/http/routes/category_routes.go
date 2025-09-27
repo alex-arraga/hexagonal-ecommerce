@@ -12,5 +12,11 @@ func LoadCategoryRoutes(r chi.Router, h *handlers.CategoryHandler) {
 		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 			h.SaveCategory(r, w)
 		})
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			h.ListCategories(r, w)
+		})
+		r.Get("/{category_id}", func(w http.ResponseWriter, r *http.Request) {
+			h.FindCategoryById(r, w)
+		})
 	})
 }

@@ -1,7 +1,7 @@
 package cachekeys
 
 func Category(id uint64) string {
-	return generateCacheKey("category:%v", id)
+	return generateCacheKey("category:%s", id)
 }
 
 func AllCategories() string {

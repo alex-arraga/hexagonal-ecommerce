@@ -27,7 +27,7 @@ func NewCategoryService(repo ports.CategoryRepository, cache ports.CacheReposito
 func (cs *CategoryService) SaveCategory(ctx context.Context, id uint64, name string) (*domain.Category, error) {
 	var category *domain.Category
 
-	if id != 0 {
+	if id == 0 {
 		newCategory, err := domain.NewCategory(name)
 		if err != nil {
 			return nil, err
@@ -50,16 +50,10 @@ func (cs *CategoryService) SaveCategory(ctx context.Context, id uint64, name str
 	}
 
 	// set the category in cache
-	err = cs.cache.Set(ctx, cacheKey, categorySerialized, cachettl.Category)
-	if err != nil {
-		slog.Warn("error caching category", "category_id", result.ID, "error", err)
-	}
+	_ = cs.cache.Set(ctx, cacheKey, categorySerialized, cachettl.Category)
 
 	// invalid the cached list of all categories
-	err = cs.cache.Delete(ctx, cachekeys.AllCategories())
-	if err != nil {
-		slog.Warn("error invalidating list of all categories", "error", err)
-	}
+	_ = cs.cache.Delete(ctx, cachekeys.AllCategories())
 
 	return result, nil
 }
@@ -95,14 +89,9 @@ func (cs *CategoryService) GetCategoryByID(ctx context.Context, id uint64) (*dom
 func (cs *CategoryService) ListCategories(ctx context.Context) ([]*domain.Category, error) {
 	// validate if category is saved in cache
 	data, err := cs.cache.Get(ctx, cachekeys.AllCategories())
-	if err != nil {
-		slog.Warn("error retrieving categories from cache")
-	}
-
-	// if data exist, return from cache
-	if data != nil {
+	if err == nil && len(data) > 0 {
 		var categories []*domain.Category
-		if err := json.Unmarshal(data, &categories); err == nil {
+		if decodeErr := json.Unmarshal(data, &categories); decodeErr == nil {
 			return categories, nil
 		}
 	}
@@ -112,6 +101,15 @@ func (cs *CategoryService) ListCategories(ctx context.Context) ([]*domain.Catego
 	if err != nil {
 		return nil, err
 	}
+
+	// save in cache
+	serialized, err := json.Marshal(categories)
+	if err != nil {
+		slog.Warn("Error marshaling categories for cache", "error", err)
+	}
+
+	// regenerate list of categories
+	_ = cs.cache.Set(ctx, cachekeys.AllCategories(), serialized, cachettl.Category)
 
 	return categories, nil
 }

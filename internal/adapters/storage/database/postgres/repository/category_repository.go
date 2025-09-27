@@ -55,7 +55,7 @@ func (r *CategoryRepo) GetCategoryByID(ctx context.Context, id uint64) (*domain.
 func (r *CategoryRepo) ListCategories(ctx context.Context) ([]*domain.Category, error) {
 	var categoriesDb []*models.CategoryModel
 
-	if result := r.db.WithContext(ctx).Find(categoriesDb); result.Error != nil {
+	if result := r.db.WithContext(ctx).Find(&categoriesDb); result.Error != nil {
 		return nil, result.Error
 	}
 
