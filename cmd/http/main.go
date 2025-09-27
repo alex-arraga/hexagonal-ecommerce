@@ -79,6 +79,7 @@ func main() {
 
 	// cart
 	cartSrv := services.NewCartService(cache)
+	cartHandler := handlers.NewCartHandler(cartSrv)
 
 	// order-products
 	opRepo := repository.NewOrderProductRepo(db)
@@ -104,6 +105,7 @@ func main() {
 	routes.LoadCategoryRoutes(router, catHandler)
 	routes.LoadProductRoutes(router, prodHandler)
 	routes.LoadOrderRoutes(router, orderHandler)
+	routes.LoadCartRoutes(router, cartHandler)
 
 	// Configurar servidor HTTP
 	s := &http.Server{
