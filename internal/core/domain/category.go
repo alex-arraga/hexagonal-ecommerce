@@ -24,3 +24,7 @@ func NewCategory(name string) (*Category, error) {
 		UpdatedAt: now,
 	}, nil
 }
+
+func (c *Category) UpdateCategory(name string) {
+	c.Name = name
+}
