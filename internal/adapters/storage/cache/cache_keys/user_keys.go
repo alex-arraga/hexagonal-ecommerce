@@ -1,7 +1,7 @@
 package cachekeys
 
 func User(id string) string {
-	return generateCacheKey("user:%s", id)
+	return generateCacheKey("user", id)
 }
 
 func AllUsers() string {

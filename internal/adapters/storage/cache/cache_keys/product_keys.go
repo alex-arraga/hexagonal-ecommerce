@@ -1,9 +1,9 @@
 package cachekeys
 
-func Category(id uint64) string {
-	return generateCacheKey("category:%s", id)
+func Product(id string) string {
+	return generateCacheKey("product", id)
 }
 
-func AllCategories() string {
-	return "categories:all"
+func AllProducts() string {
+	return "products:all"
 }

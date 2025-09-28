@@ -1,7 +1,7 @@
 package cachekeys
 
 func Order(id string) string {
-	return generateCacheKey("order:%s", id)
+	return generateCacheKey("order", id)
 }
 
 func AllOrders() string {
