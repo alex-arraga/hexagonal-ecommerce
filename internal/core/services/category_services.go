@@ -119,9 +119,17 @@ func (cs *CategoryService) ListCategories(ctx context.Context) ([]*domain.Catego
 
 // DeleteCategory implements ports.CategoryService.
 func (cs *CategoryService) DeleteCategory(ctx context.Context, id uint64) error {
+	cacheKey := cachekeys.Category(id)
+
+	// delete from database
 	err := cs.repo.DeleteCategory(ctx, id)
 	if err != nil {
 		return err
 	}
+
+	// delete from cache
+	_ = cs.cache.Delete(ctx, cacheKey)
+	_ = cs.cache.Delete(ctx, cachekeys.AllCategories())
+
 	return nil
 }

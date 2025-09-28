@@ -39,16 +39,16 @@ func (r *CategoryRepo) SaveCategory(ctx context.Context, category *domain.Catego
 }
 
 func (r *CategoryRepo) GetCategoryByID(ctx context.Context, id uint64) (*domain.Category, error) {
-	var categoryDb models.CategoryModel
+	var categoryDb = &models.CategoryModel{}
 
-	if result := r.db.WithContext(ctx).Where("id = ?", id).First(&categoryDb); result.Error != nil {
+	if result := r.db.WithContext(ctx).Where("id = ?", id).First(categoryDb); result.Error != nil {
 		if result.RowsAffected == 0 {
 			return nil, domain.ErrCategoryNotFound
 		}
 		return nil, result.Error
 	}
 
-	domainCategory := database_dtos.ConvertCategoryModelToDomain(&categoryDb)
+	domainCategory := database_dtos.ConvertCategoryModelToDomain(categoryDb)
 	return domainCategory, nil
 }
 
@@ -56,6 +56,9 @@ func (r *CategoryRepo) ListCategories(ctx context.Context) ([]*domain.Category, 
 	var categoriesDb []*models.CategoryModel
 
 	if result := r.db.WithContext(ctx).Find(&categoriesDb); result.Error != nil {
+		if result.RowsAffected == 0 {
+			return nil, domain.ErrCategoryNotFound
+		}
 		return nil, result.Error
 	}
 
@@ -64,10 +67,19 @@ func (r *CategoryRepo) ListCategories(ctx context.Context) ([]*domain.Category, 
 }
 
 func (r *CategoryRepo) DeleteCategory(ctx context.Context, id uint64) error {
-	var categoryDb *models.CategoryModel
+	var categoryDb = &models.CategoryModel{}
 
-	if result := r.db.WithContext(ctx).Where("id = ?").Delete(categoryDb); result.Error != nil {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(categoryDb)
+
+	// check error from database
+	if result.Error != nil {
 		return result.Error
 	}
+
+	// validate if database deletes a field
+	if result.RowsAffected == 0 {
+		return domain.ErrCategoryNotFound
+	}
+
 	return nil
 }

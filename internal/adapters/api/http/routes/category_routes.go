@@ -18,5 +18,8 @@ func LoadCategoryRoutes(r chi.Router, h *handlers.CategoryHandler) {
 		r.Get("/{category_id}", func(w http.ResponseWriter, r *http.Request) {
 			h.FindCategoryById(r, w)
 		})
+		r.Delete("/{category_id}", func(w http.ResponseWriter, r *http.Request) {
+			h.DeleteCategory(r, w)
+		})
 	})
 }
