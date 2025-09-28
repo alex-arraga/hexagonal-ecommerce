@@ -50,10 +50,16 @@ func (cs *CategoryService) SaveCategory(ctx context.Context, id uint64, name str
 	}
 
 	// set the category in cache
-	_ = cs.cache.Set(ctx, cacheKey, categorySerialized, cachettl.Category)
+	err = cs.cache.Set(ctx, cacheKey, categorySerialized, cachettl.Category)
+	if err != nil {
+		slog.Warn("error saving category in cache", "category_id", result.ID, "error", err)
+	}
 
 	// invalid the cached list of all categories
-	_ = cs.cache.Delete(ctx, cachekeys.AllCategories())
+	err = cs.cache.Delete(ctx, cachekeys.AllCategories())
+	if err != nil {
+		slog.Warn("error invalidating list of categories", "error", err)
+	}
 
 	return result, nil
 }
@@ -83,7 +89,10 @@ func (cs *CategoryService) GetCategoryByID(ctx context.Context, id uint64) (*dom
 		slog.Warn("Error marshaling category for cache", "error", err)
 	}
 
-	_ = cs.cache.Set(ctx, cacheKey, serialized, cachettl.Category)
+	err = cs.cache.Set(ctx, cacheKey, serialized, cachettl.Category)
+	if err != nil {
+		slog.Warn("error setting category in cache", "category_id", category.ID, "error", err)
+	}
 
 	return category, nil
 }
@@ -112,7 +121,10 @@ func (cs *CategoryService) ListCategories(ctx context.Context) ([]*domain.Catego
 	}
 
 	// regenerate list of categories
-	_ = cs.cache.Set(ctx, cachekeys.AllCategories(), serialized, cachettl.Category)
+	err = cs.cache.Set(ctx, cachekeys.AllCategories(), serialized, cachettl.Category)
+	if err != nil {
+		slog.Warn("error caching categories", "error", err)
+	}
 
 	return categories, nil
 }
@@ -128,8 +140,15 @@ func (cs *CategoryService) DeleteCategory(ctx context.Context, id uint64) error 
 	}
 
 	// delete from cache
-	_ = cs.cache.Delete(ctx, cacheKey)
-	_ = cs.cache.Delete(ctx, cachekeys.AllCategories())
+	err = cs.cache.Delete(ctx, cacheKey)
+	if err != nil {
+		slog.Warn("error deleteing category of cache", "category_id", id, "error", err)
+	}
+
+	err = cs.cache.Delete(ctx, cachekeys.AllCategories())
+	if err != nil {
+		slog.Warn("error invalidating list of all categories", "error", err)
+	}
 
 	return nil
 }

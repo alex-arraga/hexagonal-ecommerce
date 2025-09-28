@@ -91,30 +91,41 @@ func (ps *ProductService) GetProductById(ctx context.Context, id uuid.UUID) (*do
 	cacheKey := cachekeys.Product(id.String())
 
 	// check if the product exist in cache, if exist return it
-	val, err := ps.cache.Get(ctx, cacheKey)
-	if err == nil {
+	data, err := ps.cache.Get(ctx, cacheKey)
+	if err == nil && len(data) > 0 {
 		var product domain.Product
-		if decodeErr := json.Unmarshal(val, &product); decodeErr != nil {
+		if decodeErr := json.Unmarshal(data, &product); decodeErr != nil {
 			return &product, nil
 		}
 	}
 
 	// else find product in repository
-	p, err := ps.repo.GetProductById(ctx, id)
+	product, err := ps.repo.GetProductById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return p, nil
+	// set cache
+	serialized, err := json.Marshal(product)
+	if err != nil {
+		slog.Warn("Error marshaling category for cache", "error", err)
+	}
+
+	err = ps.cache.Set(ctx, cacheKey, serialized, cachettl.Product)
+	if err != nil {
+		slog.Warn("error setting product in cache", "product_id", product.ID, "error", err)
+	}
+
+	return product, nil
 }
 
 // ListProducts implements ports.ProductService.
 func (ps *ProductService) ListProducts(ctx context.Context) ([]*domain.Product, error) {
 	// check if the products exists in cache
-	values, err := ps.cache.Get(ctx, cachekeys.AllProducts())
-	if err == nil {
+	data, err := ps.cache.Get(ctx, cachekeys.AllProducts())
+	if err == nil && len(data) > 0 {
 		var products []*domain.Product
-		if decodeErr := json.Unmarshal(values, &products); decodeErr != nil {
+		if decodeErr := json.Unmarshal(data, &products); decodeErr != nil {
 			return products, nil
 		}
 	}
@@ -131,20 +142,24 @@ func (ps *ProductService) ListProducts(ctx context.Context) ([]*domain.Product, 
 		return nil, err
 	}
 
-	// set products of repository in cache
-	ps.cache.Set(ctx, cachekeys.AllProducts(), productsSerialized, cachettl.Product)
+	// regenerate list of products
+	err = ps.cache.Set(ctx, cachekeys.AllProducts(), productsSerialized, cachettl.Product)
+	if err != nil {
+		slog.Warn("error caching products", "error", err)
+	}
 
 	return products, nil
 }
 
 // DeleteProduct implements ports.ProductService.
 func (ps *ProductService) DeleteProduct(ctx context.Context, id uuid.UUID) error {
+	cacheKey := cachekeys.Product(id.String())
+
 	err := ps.repo.DeleteProduct(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	cacheKey := cachekeys.Product(id.String())
 	err = ps.cache.Delete(ctx, cacheKey)
 	if err != nil {
 		slog.Warn("error deleteing product of cache", "product_id", id, "error", err)
