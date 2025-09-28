@@ -21,7 +21,7 @@ func NewUserHandler(us ports.UserService) *UserHandler {
 	return &UserHandler{srv: us}
 }
 
-func (uh *UserHandler) SaveUser(w http.ResponseWriter, r *http.Request) {
+func (uh *UserHandler) SaveUser(r *http.Request, w http.ResponseWriter) {
 	type parameters struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`

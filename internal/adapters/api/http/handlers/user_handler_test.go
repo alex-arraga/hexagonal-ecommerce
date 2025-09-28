@@ -40,6 +40,6 @@ func Test_UserHandler_Register(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/user", strings.NewReader(reqBody))
 	w := httptest.NewRecorder()
 
-	handler.SaveUser(w, req)
+	handler.SaveUser(req, w)
 	assert.Equal(t, http.StatusCreated, w.Code)
 }
