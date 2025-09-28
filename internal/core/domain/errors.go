@@ -5,6 +5,7 @@ import "errors"
 var (
 	// User errors
 	ErrEmailIsRequire    = errors.New("email is required")
+	ErrCreatingUser      = errors.New("couldn't create the user")
 	ErrNameIsRequire     = errors.New("name is required")
 	ErrPasswordIsRequire = errors.New("password is required")
 	ErrMinLenghtName     = errors.New("name of user must have at least 3 characters")

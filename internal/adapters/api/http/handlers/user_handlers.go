@@ -7,6 +7,9 @@ import (
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type UserHandler struct {
@@ -17,7 +20,7 @@ func NewUserHandler(us ports.UserService) *UserHandler {
 	return &UserHandler{us: us}
 }
 
-func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) SaveUser(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
@@ -25,6 +28,21 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Role     string `json:"role,omitempty"`
 	}
 
+	var id uuid.UUID
+	userId := chi.URLParam(r, "user_id")
+
+	if userId != "" {
+		parsed, err := uuid.Parse(userId)
+		if err != nil {
+			httpdtos.RespondError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		id = parsed
+	} else {
+		id = uuid.Nil
+	}
+
+	// parse params of body
 	params, err := utils.ParseRequestBody[parameters](r)
 	if err != nil {
 		httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Invalid input: %s", err))
@@ -55,7 +73,15 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.us.Register(r.Context(), params.Name, params.Email, params.Password, role)
+	inputs := domain.SaveUserInputs{
+		ID:       id,
+		Name:     params.Name,
+		Email:    params.Email,
+		Password: params.Password,
+		Role:     role,
+	}
+
+	user, err := h.us.SaveUser(r.Context(), inputs)
 	if err != nil {
 		httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Error creating user: %v", err))
 		return

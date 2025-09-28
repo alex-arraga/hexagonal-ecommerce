@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,38 +35,50 @@ type User struct {
 	UpdatedAt time.Time
 }
 
+type SaveUserInputs struct {
+	ID       uuid.UUID
+	Name     string
+	Email    string
+	Password string
+	Role     UserRole
+}
+
 // NewUser creates a new user applying the bussiness rules
-func NewUser(name, email, password string, role UserRole, hasher PasswordHasher) (*User, error) {
-	if len(name) == 0 {
+func NewUser(i SaveUserInputs, hasher PasswordHasher) (*User, error) {
+	if i.ID != uuid.Nil {
+		return nil, fmt.Errorf("%w: ID must not be provided when creating a user", ErrCreatingUser)
+	}
+
+	if len(i.Name) == 0 {
 		return nil, ErrNameIsRequire
 	}
 
-	if len(email) == 0 {
+	if len(i.Email) == 0 {
 		return nil, ErrEmailIsRequire
 	}
 
-	if len(password) == 0 {
+	if len(i.Password) == 0 {
 		return nil, ErrPasswordIsRequire
 	}
 
-	if len(name) < minNameLength {
+	if len(i.Name) < minNameLength {
 		return nil, ErrMinLenghtName
 	}
 
-	if len(password) < minPasswordLength {
+	if len(i.Password) < minPasswordLength {
 		return nil, ErrMinLenghtPassword
 	}
 
-	if len(role) == 0 {
+	if len(i.Role) == 0 {
 		return nil, ErrRoleIsRequire
 	}
 
-	if role != Admin && role != Client && role != Seller {
+	if i.Role != Admin && i.Role != Client && i.Role != Seller {
 		return nil, ErrRoleIsInvalid
 	}
 
 	// hash password with the provided hasher
-	hashedPassword, err := hasher.Hash(password)
+	hashedPassword, err := hasher.Hash(i.Password)
 	if err != nil {
 		return nil, ErrHashingPassword
 	}
@@ -73,11 +86,55 @@ func NewUser(name, email, password string, role UserRole, hasher PasswordHasher)
 	now := time.Now()
 	return &User{
 		ID:        uuid.New(),
-		Name:      name,
-		Email:     email,
+		Name:      i.Name,
+		Email:     i.Email,
 		Password:  hashedPassword,
-		Role:      role,
+		Role:      i.Role,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}, nil
+}
+
+func (u *User) UpdateUser(i SaveUserInputs, hasher PasswordHasher) error {
+	if len(i.Name) == 0 {
+		return ErrNameIsRequire
+	}
+
+	if len(i.Email) == 0 {
+		return ErrEmailIsRequire
+	}
+
+	if len(i.Password) == 0 {
+		return ErrPasswordIsRequire
+	}
+
+	if len(i.Name) < minNameLength {
+		return ErrMinLenghtName
+	}
+
+	if len(i.Password) < minPasswordLength {
+		return ErrMinLenghtPassword
+	}
+
+	if len(i.Role) == 0 {
+		return ErrRoleIsRequire
+	}
+
+	if i.Role != Admin && i.Role != Client && i.Role != Seller {
+		return ErrRoleIsInvalid
+	}
+
+	// hash password with the provided hasher
+	hashedPassword, err := hasher.Hash(i.Password)
+	if err != nil {
+		return ErrHashingPassword
+	}
+
+	u.Name = i.Name
+	u.Email = i.Email
+	u.Password = hashedPassword
+	u.Role = i.Role
+	u.UpdatedAt = time.Now()
+
+	return nil
 }

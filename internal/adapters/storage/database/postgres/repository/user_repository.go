@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"go-ecommerce/internal/adapters/storage/database/postgres/database_dtos"
 	"go-ecommerce/internal/adapters/storage/database/postgres/models"
 	"go-ecommerce/internal/core/domain"
@@ -26,11 +25,20 @@ func NewUserRepo(db *gorm.DB) ports.UserRepository {
 }
 
 // CreateUser inserts a new user into the database
-func (repo *UserRepo) CreateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
+func (repo *UserRepo) SaveUser(ctx context.Context, user *domain.User) (*domain.User, error) {
 	userdb := database_dtos.CovertToDBUser(user)
 
-	if result := repo.db.WithContext(ctx).Create(userdb); result.Error != nil {
-		return nil, result.Error
+	if user.ID != uuid.Nil {
+		if result := repo.db.WithContext(ctx).Where("id = ?", user.ID).Updates(userdb); result.Error != nil {
+			if result.RowsAffected == 0 {
+				return nil, domain.ErrUserNotFound
+			}
+			return nil, result.Error
+		} else {
+			if result := repo.db.WithContext(ctx).Create(userdb); result.Error != nil {
+				return nil, result.Error
+			}
+		}
 	}
 
 	domainUser := database_dtos.CovertToDomainUser(userdb)
@@ -39,31 +47,31 @@ func (repo *UserRepo) CreateUser(ctx context.Context, user *domain.User) (*domai
 
 // GetUserByID selects a user by id
 func (repo *UserRepo) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
-	var dbUser *models.UserModel
+	var dbUser models.UserModel
 
 	if result := repo.db.WithContext(ctx).First(&dbUser, "id = ?", id); result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if result.RowsAffected == 0 {
 			return nil, domain.ErrUserNotFound
 		}
 		return nil, result.Error
 	}
 
-	domainUser := database_dtos.CovertToDomainUser(dbUser)
+	domainUser := database_dtos.CovertToDomainUser(&dbUser)
 	return domainUser, nil
 }
 
 // GetUserByEmail selects a user by email
 func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	var dbUser *models.UserModel
+	var dbUser models.UserModel
 
 	if result := repo.db.WithContext(ctx).First(&dbUser, "email = ?", email); result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if result.RowsAffected == 0 {
 			return nil, domain.ErrUserNotFound
 		}
 		return nil, result.Error
 	}
 
-	domainUser := database_dtos.CovertToDomainUser(dbUser)
+	domainUser := database_dtos.CovertToDomainUser(&dbUser)
 	return domainUser, nil
 }
 
@@ -82,22 +90,8 @@ func (repo *UserRepo) ListUsers(ctx context.Context, skip, limit uint64) ([]*dom
 	return domainUsers, nil
 }
 
-// UpdateUser updates a user
-func (repo *UserRepo) UpdateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
-	var dbUser models.UserModel
-
-	result := repo.db.WithContext(ctx).
-		Model(dbUser).
-		Where("id = ?", user.ID).
-		Updates(user)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	return repo.GetUserByID(ctx, user.ID)
-}
-
 // DeleteUser deletes a user
 func (repo *UserRepo) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	return repo.db.WithContext(ctx).Delete(&models.UserModel{}, "id = ?", id).Error
+	var userDb = &models.UserModel{}
+	return repo.db.WithContext(ctx).Delete(userDb, "id = ?", id).Error
 }

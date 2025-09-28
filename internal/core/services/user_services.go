@@ -9,6 +9,8 @@ import (
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"log/slog"
+
+	"github.com/google/uuid"
 )
 
 type UserService struct {
@@ -26,15 +28,37 @@ func NewUserService(repo ports.UserRepository, cache ports.CacheRepository, hash
 }
 
 // Register creates a new user
-func (us *UserService) Register(ctx context.Context, name, email, password string, role domain.UserRole) (*domain.User, error) {
-	// create user domain entity applying business rules
-	u, err := domain.NewUser(name, email, password, role, us.hasher)
-	if err != nil {
-		return nil, err
+func (us *UserService) SaveUser(ctx context.Context, inputs domain.SaveUserInputs) (*domain.User, error) {
+	var user *domain.User
+
+	if inputs.ID == uuid.Nil {
+		// create a user entity applying business rules
+		inputs := domain.SaveUserInputs{
+			Name:     inputs.Name,
+			Email:    inputs.Email,
+			Password: inputs.Password,
+			Role:     inputs.Role,
+		}
+
+		newUser, err := domain.NewUser(inputs, us.hasher)
+		if err != nil {
+			return nil, err
+		}
+		user = newUser
+	} else {
+		// update user entity applying business rules
+		inputs := domain.SaveUserInputs{
+			ID:       inputs.ID,
+			Name:     inputs.Name,
+			Email:    inputs.Email,
+			Password: inputs.Password,
+			Role:     inputs.Role,
+		}
+		user.UpdateUser(inputs, us.hasher)
 	}
 
 	// create the user in the repository
-	createdUser, err := us.repo.CreateUser(ctx, u)
+	result, err := us.repo.SaveUser(ctx, user)
 	if err != nil {
 		if err == shared.ErrConflictingData {
 			return nil, err
@@ -43,11 +67,11 @@ func (us *UserService) Register(ctx context.Context, name, email, password strin
 	}
 
 	// cache the newly created user
-	cacheKey := cachekeys.User(createdUser.ID.String())
-	userSerialized, _ := json.Marshal(createdUser)
+	cacheKey := cachekeys.User(result.ID.String())
+	userSerialized, _ := json.Marshal(result)
 	err = us.cache.Set(ctx, cacheKey, userSerialized, cachettl.User)
 	if err != nil {
-		slog.Warn("error caching user", "user_id", createdUser.ID, "error", err)
+		slog.Warn("error caching user", "user_id", result.ID, "error", err)
 	}
 
 	// invalid the cached list of all users
@@ -56,5 +80,25 @@ func (us *UserService) Register(ctx context.Context, name, email, password strin
 		slog.Warn("error invalidating list of all users", "error", err)
 	}
 
-	return createdUser, nil
+	return result, nil
+}
+
+// GetUserByEmail implements ports.UserService.
+func (us *UserService) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	panic("unimplemented")
+}
+
+// GetUserByID implements ports.UserService.
+func (us *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	panic("unimplemented")
+}
+
+// ListUsers implements ports.UserService.
+func (us *UserService) ListUsers(ctx context.Context, skip uint64, limit uint64) ([]*domain.User, error) {
+	panic("unimplemented")
+}
+
+// DeleteUser implements ports.UserService.
+func (us *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	panic("unimplemented")
 }
