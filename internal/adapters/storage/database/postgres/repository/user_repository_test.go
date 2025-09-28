@@ -26,7 +26,7 @@ func Test_CreateUserAndGetUser(t *testing.T) {
 
 	// create user
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
-	userCreated, err := repo.CreateUser(ctx, u)
+	userCreated, err := repo.SaveUser(ctx, u)
 
 	require.NoError(t, err)
 	require.NotNil(t, userCreated)
@@ -55,7 +55,7 @@ func Test_ListUsers(t *testing.T) {
 		name := faker.FirstName()
 		email := faker.Email(options.WithCustomDomain("test"))
 		u := testhelpers.NewDomainUser(name, email)
-		_, err := repo.CreateUser(ctx, u)
+		_, err := repo.SaveUser(ctx, u)
 		require.NoError(t, err)
 	}
 
@@ -74,7 +74,7 @@ func Test_UpdateUser(t *testing.T) {
 	_, repo := newRepoTx(t)
 
 	u := testhelpers.NewDomainUser("john", "john@mail.test")
-	created, err := repo.CreateUser(ctx, u)
+	created, err := repo.SaveUser(ctx, u)
 	require.NoError(t, err)
 
 	newName := faker.FirstName()
@@ -86,7 +86,7 @@ func Test_UpdateUser(t *testing.T) {
 	created.Email = newEmail
 
 	// update all data
-	updated, err := repo.UpdateUser(ctx, created)
+	updated, err := repo.SaveUser(ctx, created)
 	require.NoError(t, err)
 	assert.Equal(t, newName, updated.Name)
 	assert.Equal(t, newPass, updated.Password)
@@ -98,7 +98,7 @@ func Test_DeleteUser(t *testing.T) {
 	_, repo := newRepoTx(t)
 
 	u := testhelpers.NewDomainUser("john", "john@mail.test")
-	created, err := repo.CreateUser(ctx, u)
+	created, err := repo.SaveUser(ctx, u)
 	require.NoError(t, err)
 
 	// deletes user

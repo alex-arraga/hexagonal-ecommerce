@@ -19,13 +19,13 @@ import (
 
 func Test_UserHandler_Register(t *testing.T) {
 	mockUserService := &mocks.MockUserService{
-		RegisterFunc: func(ctx context.Context, name, email, password string, role domain.UserRole) (*domain.User, error) {
+		SaveFunc: func(ctx context.Context, i domain.SaveUserInputs) (*domain.User, error) {
 			return &domain.User{
 				ID:        uuid.New(),
-				Name:      name,
-				Email:     email,
-				Password:  password,
-				Role:      role,
+				Name:      i.Name,
+				Email:     i.Email,
+				Password:  i.Password,
+				Role:      i.Role,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			}, nil
@@ -40,6 +40,6 @@ func Test_UserHandler_Register(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/user", strings.NewReader(reqBody))
 	w := httptest.NewRecorder()
 
-	handler.Register(w, req)
+	handler.SaveUser(w, req)
 	assert.Equal(t, http.StatusCreated, w.Code)
 }

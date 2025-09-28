@@ -4,6 +4,7 @@ import (
 	"context"
 	"go-ecommerce/internal/adapters/security"
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
+	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"go-ecommerce/internal/core/services"
 	testhelpers "go-ecommerce/internal/test_helpers"
@@ -37,7 +38,15 @@ func Test_UserService_Register(t *testing.T) {
 	srv := newRepoServices(t)
 
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
-	registered, err := srv.Register(ctx, u.Name, u.Email, u.Password, u.Role)
+
+	inputs := domain.SaveUserInputs{
+		Name:     u.Name,
+		Email:    u.Email,
+		Password: u.Password,
+		Role:     u.Role,
+	}
+
+	registered, err := srv.SaveUser(ctx, inputs)
 	require.NoError(t, err)
 
 	assert.Equal(t, u.Name, registered.Name)

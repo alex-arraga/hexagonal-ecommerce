@@ -31,7 +31,7 @@ func Test_UserRepo_With_Postgres_Container(t *testing.T) {
 	u := testhelpers.NewDomainUser("john", "john@mail.test")
 
 	// repo testing - create user
-	create, err := repo.CreateUser(ctx, u)
+	create, err := repo.SaveUser(ctx, u)
 	require.NoError(t, err)
 	assert.Equal(t, u.ID, create.ID)
 	assert.Equal(t, u.Name, create.Name)

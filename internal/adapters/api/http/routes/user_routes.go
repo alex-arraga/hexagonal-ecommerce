@@ -10,7 +10,7 @@ import (
 func LoadUserRoutes(r chi.Router, h *handlers.UserHandler) {
 	r.Route("/user", func(r chi.Router) {
 		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-			h.Register(w, r)
+			h.SaveUser(w, r)
 		})
 	})
 }
