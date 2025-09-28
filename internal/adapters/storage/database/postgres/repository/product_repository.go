@@ -60,7 +60,7 @@ func (pr *ProductRepo) GetProductById(ctx context.Context, id uuid.UUID) (*domai
 func (pr *ProductRepo) ListProducts(ctx context.Context) ([]*domain.Product, error) {
 	var productsDb []*models.ProductModel
 
-	if result := pr.db.WithContext(ctx).Find(productsDb); result.Error != nil {
+	if result := pr.db.WithContext(ctx).Find(&productsDb); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -70,11 +70,6 @@ func (pr *ProductRepo) ListProducts(ctx context.Context) ([]*domain.Product, err
 
 // DeleteProduct implements ports.ProductRepository.
 func (pr *ProductRepo) DeleteProduct(ctx context.Context, id uuid.UUID) error {
-	var productDb *models.ProductModel
-
-	if result := pr.db.WithContext(ctx).Delete(productDb, "id = ?", id); result.Error != nil {
-		return result.Error
-	}
-
-	return nil
+	var productDb = &models.ProductModel{}
+	return pr.db.WithContext(ctx).Delete(productDb, "id = ?", id).Error
 }
