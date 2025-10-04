@@ -22,10 +22,10 @@ func Test_UserHandler_Register(t *testing.T) {
 		SaveFunc: func(ctx context.Context, i domain.SaveUserInputs) (*domain.User, error) {
 			return &domain.User{
 				ID:        uuid.New(),
-				Name:      i.Name,
-				Email:     i.Email,
-				Password:  i.Password,
-				Role:      i.Role,
+				Name:      *i.Name,
+				Email:     *i.Email,
+				Password:  *i.Password,
+				Role:      *i.Role,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			}, nil

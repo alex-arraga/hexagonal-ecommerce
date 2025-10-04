@@ -23,10 +23,15 @@ func NewUserHandler(us ports.UserService) *UserHandler {
 
 func (uh *UserHandler) SaveUser(r *http.Request, w http.ResponseWriter) {
 	type parameters struct {
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Role     string `json:"role,omitempty"`
+		Name     *string `json:"name"`
+		Email    *string `json:"email"`
+		Password *string `json:"password"`
+		Role     *string `json:"role,omitempty"`
+	}
+
+	if r.Method != http.MethodPost && r.Method != http.MethodPut {
+		httpdtos.RespondError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
 	}
 
 	var id uuid.UUID
@@ -50,28 +55,31 @@ func (uh *UserHandler) SaveUser(r *http.Request, w http.ResponseWriter) {
 		return
 	}
 
-	if params.Name == "" {
+	// validates empty params
+	if params.Name != nil && *params.Name == "" {
 		httpdtos.RespondError(w, http.StatusBadRequest, "Name is required")
 		return
 	}
-	if params.Email == "" {
+	if params.Email != nil && *params.Email == "" {
 		httpdtos.RespondError(w, http.StatusBadRequest, "Email is required")
 		return
 	}
-	if params.Password == "" {
+	if params.Password != nil && *params.Password == "" {
 		httpdtos.RespondError(w, http.StatusBadRequest, "Password is required")
 		return
 	}
 
 	role := domain.Client
-	if params.Role != "" {
-		role = domain.UserRole(params.Role)
+	if params.Role != nil && *params.Role != "" {
+		role = domain.UserRole(*params.Role)
 	}
 
 	// Validating if email format is valid
-	if isValid := utils.IsValidEmail(params.Email); !isValid {
-		httpdtos.RespondError(w, http.StatusBadRequest, "Invalid email format")
-		return
+	if params.Email != nil && *params.Email != "" {
+		if isValid := utils.IsValidEmail(*params.Email); !isValid {
+			httpdtos.RespondError(w, http.StatusBadRequest, "Invalid email format")
+			return
+		}
 	}
 
 	inputs := domain.SaveUserInputs{
@@ -79,16 +87,16 @@ func (uh *UserHandler) SaveUser(r *http.Request, w http.ResponseWriter) {
 		Name:     params.Name,
 		Email:    params.Email,
 		Password: params.Password,
-		Role:     role,
+		Role:     &role,
 	}
 
 	user, err := uh.srv.SaveUser(r.Context(), inputs)
 	if err != nil {
-		httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Error creating user: %v", err))
+		httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Error saving user: %v", err))
 		return
 	}
 
-	httpdtos.RespondJSON(w, http.StatusCreated, "User successfully registered", user)
+	httpdtos.RespondJSON(w, http.StatusCreated, "User successfully saved", user)
 }
 
 func (uh *UserHandler) FindUserById(r *http.Request, w http.ResponseWriter) {

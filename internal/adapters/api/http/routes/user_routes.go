@@ -21,7 +21,7 @@ func LoadUserRoutes(r chi.Router, h *handlers.UserHandler) {
 		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 			h.SaveUser(r, w)
 		})
-		r.Put("/", func(w http.ResponseWriter, r *http.Request) {
+		r.Put("/{user_id}", func(w http.ResponseWriter, r *http.Request) {
 			h.SaveUser(r, w)
 		})
 		r.Delete("/{user_id}", func(w http.ResponseWriter, r *http.Request) {

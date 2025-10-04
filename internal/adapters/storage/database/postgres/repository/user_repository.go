@@ -34,10 +34,10 @@ func (repo *UserRepo) SaveUser(ctx context.Context, user *domain.User) (*domain.
 				return nil, domain.ErrUserNotFound
 			}
 			return nil, result.Error
-		} else {
-			if result := repo.db.WithContext(ctx).Create(userdb); result.Error != nil {
-				return nil, result.Error
-			}
+		}
+	} else {
+		if result := repo.db.WithContext(ctx).Create(userdb); result.Error != nil {
+			return nil, result.Error
 		}
 	}
 

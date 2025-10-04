@@ -46,6 +46,12 @@ func (us *UserService) SaveUser(ctx context.Context, inputs domain.SaveUserInput
 		}
 		user = newUser
 	} else {
+		// find user before update
+		existingUser, err := us.repo.GetUserByID(ctx, inputs.ID)
+		if err != nil {
+			return nil, err
+		}
+
 		// update user entity applying business rules
 		inputs := domain.SaveUserInputs{
 			ID:       inputs.ID,
@@ -54,7 +60,8 @@ func (us *UserService) SaveUser(ctx context.Context, inputs domain.SaveUserInput
 			Password: inputs.Password,
 			Role:     inputs.Role,
 		}
-		user.UpdateUser(inputs, us.hasher)
+		existingUser.UpdateUser(inputs, us.hasher)
+		user = existingUser
 	}
 
 	// create the user in the repository
