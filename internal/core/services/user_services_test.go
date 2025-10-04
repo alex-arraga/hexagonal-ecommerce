@@ -40,10 +40,10 @@ func Test_UserService_Register(t *testing.T) {
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
 
 	inputs := domain.SaveUserInputs{
-		Name:     u.Name,
-		Email:    u.Email,
-		Password: u.Password,
-		Role:     u.Role,
+		Name:     &u.Name,
+		Email:    &u.Email,
+		Password: &u.Password,
+		Role:     &u.Role,
 	}
 
 	registered, err := srv.SaveUser(ctx, inputs)
