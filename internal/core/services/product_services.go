@@ -108,7 +108,7 @@ func (ps *ProductService) GetProductById(ctx context.Context, id uuid.UUID) (*do
 	// set cache
 	serialized, err := json.Marshal(product)
 	if err != nil {
-		slog.Warn("Error marshaling category for cache", "error", err)
+		slog.Warn("Error marshaling product for cache", "error", err)
 	}
 
 	err = ps.cache.Set(ctx, cacheKey, serialized, cachettl.Product)

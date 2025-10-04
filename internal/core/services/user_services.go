@@ -97,7 +97,35 @@ func (us *UserService) GetUserByEmail(ctx context.Context, email string) (*domai
 
 // GetUserByID implements ports.UserService.
 func (us *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
-	panic("unimplemented")
+	cacheKey := cachekeys.User(id.String())
+
+	// check if the product exist in cache, if exist return it
+	data, err := us.cache.Get(ctx, cacheKey)
+	if err == nil && len(data) > 0 {
+		var user domain.User
+		if decodeErr := json.Unmarshal(data, &user); decodeErr != nil {
+			return &user, nil
+		}
+	}
+
+	// else find user in repository
+	user, err := us.repo.GetUserByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// set cache
+	serialized, err := json.Marshal(user)
+	if err != nil {
+		slog.Warn("Error marshaling user for cache", "error", err)
+	}
+
+	err = us.cache.Set(ctx, cacheKey, serialized, cachettl.User)
+	if err != nil {
+		slog.Warn("error setting user in cache", "user_id", user.ID, "error", err)
+	}
+
+	return user, nil
 }
 
 // ListUsers implements ports.UserService.
