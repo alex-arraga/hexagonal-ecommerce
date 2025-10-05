@@ -40,6 +40,17 @@ func (us *UserService) SaveUser(ctx context.Context, inputs domain.SaveUserInput
 			Role:     inputs.Role,
 		}
 
+		// find user before update
+		existingUser, err := us.repo.GetUserByEmail(ctx, *inputs.Email)
+		if err != nil {
+			return nil, err
+		}
+
+		// checks if exist an account with the email sent
+		if existingUser != nil {
+			return nil, domain.ErrEmailExist
+		}
+
 		newUser, err := domain.NewUser(inputs, us.hasher)
 		if err != nil {
 			return nil, err
@@ -162,5 +173,22 @@ func (us *UserService) ListUsers(ctx context.Context, skip uint64, limit uint64)
 
 // DeleteUser implements ports.UserService.
 func (us *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	panic("unimplemented")
+	cacheKey := cachekeys.User(id.String())
+
+	err := us.repo.DeleteUser(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	err = us.cache.Delete(ctx, cacheKey)
+	if err != nil {
+		slog.Warn("error deleteing user of cache", "user_id", id, "error", err)
+	}
+
+	err = us.cache.Delete(ctx, cachekeys.AllUsers())
+	if err != nil {
+		slog.Warn("error invalidating list of all users", "error", err)
+	}
+
+	return nil
 }

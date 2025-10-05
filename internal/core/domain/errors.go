@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	// User errors
+	ErrEmailExist        = errors.New("an account with this email already exist, try loggin")
 	ErrEmailIsRequire    = errors.New("email is required")
 	ErrCreatingUser      = errors.New("couldn't create the user")
 	ErrNameIsRequire     = errors.New("name is required")
