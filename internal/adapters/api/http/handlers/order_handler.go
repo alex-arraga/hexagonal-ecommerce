@@ -154,3 +154,24 @@ func (oh *OrderHandler) GetOrderByID(r *http.Request, w http.ResponseWriter) {
 
 	httpdtos.RespondJSON(w, http.StatusOK, "Order retrieved successfully", order)
 }
+
+func (oh *OrderHandler) GetAllOrders(r *http.Request, w http.ResponseWriter) {
+	// Verify HTTP method
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Retrieve the order using the service
+	orders, err := oh.srv.ListOrders(r.Context())
+	if err != nil {
+		httpdtos.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Error retrieving orders: %s", err))
+		return
+	}
+	if orders == nil {
+		httpdtos.RespondError(w, http.StatusNotFound, "Orders not found")
+		return
+	}
+
+	httpdtos.RespondJSON(w, http.StatusOK, "Orders retrieved successfully", orders)
+}
