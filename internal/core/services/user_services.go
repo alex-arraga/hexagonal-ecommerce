@@ -130,7 +130,34 @@ func (us *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.U
 
 // ListUsers implements ports.UserService.
 func (us *UserService) ListUsers(ctx context.Context, skip uint64, limit uint64) ([]*domain.User, error) {
-	panic("unimplemented")
+	// check if the products exists in cache
+	data, err := us.cache.Get(ctx, cachekeys.AllUsers())
+	if err == nil && len(data) > 0 {
+		var users []*domain.User
+		if decodeErr := json.Unmarshal(data, &users); decodeErr != nil {
+			return users, nil
+		}
+	}
+
+	// find users in repository
+	users, err := us.repo.ListUsers(ctx, 0, 20)
+	if err != nil {
+		return nil, err
+	}
+
+	// serialize products
+	usersSerialized, err := json.Marshal(users)
+	if err != nil {
+		return nil, err
+	}
+
+	// regenerate list of products
+	err = us.cache.Set(ctx, cachekeys.AllUsers(), usersSerialized, cachettl.User)
+	if err != nil {
+		slog.Warn("error caching users", "error", err)
+	}
+
+	return users, nil
 }
 
 // DeleteUser implements ports.UserService.
