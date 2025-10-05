@@ -103,7 +103,44 @@ func (us *UserService) SaveUser(ctx context.Context, inputs domain.SaveUserInput
 
 // GetUserByEmail implements ports.UserService.
 func (us *UserService) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	panic("unimplemented")
+	emailCacheKey := cachekeys.UserByEmail(email)
+
+	idBytes, err := us.cache.Get(ctx, emailCacheKey)
+	if err == nil && len(idBytes) > 0 {
+		idStr := string(idBytes)
+
+		data, err := us.cache.Get(ctx, idStr)
+		if err == nil && len(data) > 0 {
+			var user domain.User
+			if decodeErr := json.Unmarshal(data, &user); decodeErr != nil {
+				return &user, nil
+			}
+		}
+	}
+
+	// if the user is not cached, find in repo and cache
+	user, err := us.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	serialized, err := json.Marshal(user)
+	if err != nil {
+		slog.Warn("error marshaling user for cache", "error", err)
+	}
+
+	// save in cache, user and a mapping between email and user.ID
+	cacheKey := cachekeys.User(user.ID.String())
+	err = us.cache.Set(ctx, cacheKey, serialized, cachettl.User)
+	if err != nil {
+		slog.Warn("error setting user in cache", "user_id", user.ID, "error", err)
+	}
+	err = us.cache.Set(ctx, emailCacheKey, []byte(user.ID.String()), cachettl.User)
+	if err != nil {
+		slog.Warn("error setting user map between email and ID in cache", "user_email", email, "user_id", user.ID, "error", err)
+	}
+
+	return user, nil
 }
 
 // GetUserByID implements ports.UserService.
@@ -128,7 +165,7 @@ func (us *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.U
 	// set cache
 	serialized, err := json.Marshal(user)
 	if err != nil {
-		slog.Warn("Error marshaling user for cache", "error", err)
+		slog.Warn("error marshaling user for cache", "error", err)
 	}
 
 	err = us.cache.Set(ctx, cacheKey, serialized, cachettl.User)
