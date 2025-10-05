@@ -44,12 +44,12 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 		product = newProduct
 
 	} else {
-		product, err := ps.repo.GetProductById(ctx, inputs.ID)
+		prod, err := ps.repo.GetProductById(ctx, inputs.ID)
 		if err != nil {
 			return nil, err
 		}
 
-		product.Update(
+		prod.Update(
 			inputs.Name,
 			inputs.SKU,
 			inputs.Image,
@@ -57,6 +57,7 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 			inputs.Price,
 			inputs.CategoryID,
 		)
+		product = prod
 	}
 
 	result, err := ps.repo.SaveProduct(ctx, product)

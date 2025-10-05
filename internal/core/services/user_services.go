@@ -42,7 +42,7 @@ func (us *UserService) SaveUser(ctx context.Context, inputs domain.SaveUserInput
 
 		// find user before update
 		existingUser, err := us.repo.GetUserByEmail(ctx, *inputs.Email)
-		if err != nil {
+		if err != nil && err != domain.ErrUserNotFound {
 			return nil, err
 		}
 

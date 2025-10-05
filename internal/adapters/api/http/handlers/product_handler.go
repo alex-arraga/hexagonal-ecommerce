@@ -27,7 +27,7 @@ func (ph *ProductHandler) SaveProduct(r *http.Request, w http.ResponseWriter) {
 		SKU        *string  `json:"sku"`
 		Price      *float64 `json:"price"`
 		Stock      *int64   `json:"stock"`
-		CategoryID *uint64  `json:"productId"`
+		CategoryID *uint64  `json:"category_id"`
 	}
 
 	if r.Method != http.MethodPost && r.Method != http.MethodPut {

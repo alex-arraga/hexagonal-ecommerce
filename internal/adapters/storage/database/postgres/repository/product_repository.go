@@ -25,7 +25,7 @@ func (pr *ProductRepo) SaveProduct(ctx context.Context, product *domain.Product)
 
 	// if exist product.ID update, else create new product
 	if product.ID != uuid.Nil {
-		if result := pr.db.WithContext(ctx).Where("id = ?", product.ID).Updates(productDb); result.Error != nil {
+		if result := pr.db.WithContext(ctx).Preload("Category").Where("id = ?", product.ID).Updates(productDb); result.Error != nil {
 			if result.RowsAffected == 0 {
 				return nil, domain.ErrProductNotFound
 			}
@@ -43,9 +43,9 @@ func (pr *ProductRepo) SaveProduct(ctx context.Context, product *domain.Product)
 
 // GetProductById implements ports.ProductRepository.
 func (pr *ProductRepo) GetProductById(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
-	var productDb *models.ProductModel
+	var productDb = &models.ProductModel{}
 
-	if result := pr.db.WithContext(ctx).First(productDb, "id = ?", id); result.Error != nil {
+	if result := pr.db.WithContext(ctx).Preload("Category").First(productDb, "id = ?", id); result.Error != nil {
 		if result.RowsAffected == 0 {
 			return nil, domain.ErrProductNotFound
 		}
@@ -60,7 +60,7 @@ func (pr *ProductRepo) GetProductById(ctx context.Context, id uuid.UUID) (*domai
 func (pr *ProductRepo) ListProducts(ctx context.Context) ([]*domain.Product, error) {
 	var productsDb []*models.ProductModel
 
-	if result := pr.db.WithContext(ctx).Find(&productsDb); result.Error != nil {
+	if result := pr.db.WithContext(ctx).Preload("Category").Find(&productsDb); result.Error != nil {
 		return nil, result.Error
 	}
 

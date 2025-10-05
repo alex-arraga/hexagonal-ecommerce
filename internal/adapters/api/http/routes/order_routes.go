@@ -18,5 +18,8 @@ func LoadOrderRoutes(r chi.Router, h *handlers.OrderHandler) {
 		r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
 			h.GetOrderByID(r, w)
 		})
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			h.GetAllOrders(r, w)
+		})
 	})
 }
