@@ -84,12 +84,20 @@ func (us *UserService) SaveUser(ctx context.Context, inputs domain.SaveUserInput
 		return nil, shared.ErrInternal
 	}
 
-	// cache the newly created user
+	// keys of cache
+	emailCacheKey := cachekeys.UserByEmail(result.Email)
 	cacheKey := cachekeys.User(result.ID.String())
+
+	// cache the saved user
 	userSerialized, _ := json.Marshal(result)
 	err = us.cache.Set(ctx, cacheKey, userSerialized, cachettl.User)
 	if err != nil {
 		slog.Warn("error caching user", "user_id", result.ID, "error", err)
+	}
+
+	err = us.cache.Set(ctx, emailCacheKey, []byte(user.ID.String()), cachettl.User)
+	if err != nil {
+		slog.Warn("error setting user map between email and ID in cache", "user_email", user.Email, "user_id", user.ID, "error", err)
 	}
 
 	// invalid the cached list of all users
