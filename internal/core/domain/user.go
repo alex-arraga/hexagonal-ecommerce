@@ -85,7 +85,6 @@ func NewUser(i SaveUserInputs, hasher PasswordHasher) (*User, error) {
 
 	now := time.Now()
 	return &User{
-		ID:        uuid.New(),
 		Name:      *i.Name,
 		Email:     *i.Email,
 		Password:  hashedPassword,
