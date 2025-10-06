@@ -84,7 +84,10 @@ func (c *CartService) GetCart(ctx context.Context, userId uuid.UUID) (*domain.Ca
 // RemoveItem implements ports.CartService.
 func (c *CartService) RemoveItem(ctx context.Context, userId, productId uuid.UUID) error {
 	cart := c.loadCart(ctx, userId)
-	cart.RemoveItem(productId)
+	err := cart.RemoveItem(productId)
+	if err != nil {
+		return err
+	}
 	return c.saveCart(ctx, cart)
 }
 

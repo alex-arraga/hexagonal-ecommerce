@@ -37,5 +37,7 @@ var (
 )
 
 var (
-	ErrNonExistProductCart = errors.New("product not exist in cart, quantity must be a positive number")
+	ErrAlreadyEmptyCart                    = errors.New("the cart is already empty")
+	ErrProductNotFoundCart                 = errors.New("product not found in cart")
+	ErrNegativeQuantityNonExistProductCart = errors.New("product not exist in cart, quantity must be a positive number")
 )

@@ -38,7 +38,7 @@ func (c *Cart) AddItem(productId uuid.UUID, quantity int16) error {
 
 	// If product not exist and quantity is negative, return error
 	if quantity < 0 {
-		return ErrNonExistProductCart
+		return ErrNegativeQuantityNonExistProductCart
 	}
 
 	c.Items = append(c.Items, CartItem{
@@ -49,14 +49,20 @@ func (c *Cart) AddItem(productId uuid.UUID, quantity int16) error {
 }
 
 // RemoveItem removes an item from the cart by product ID
-func (c *Cart) RemoveItem(productID uuid.UUID) {
+func (c *Cart) RemoveItem(productID uuid.UUID) error {
+	if len(c.Items) <= 0 {
+		return ErrAlreadyEmptyCart
+	}
+
 	for i, item := range c.Items {
+		// Check if productID exist in cart
 		if item.ProductID == productID {
-			// Remove the item from the slice
-			c.Items = append(c.Items[:i], c.Items[i+1:]...)
-			return
+			c.Items = append(c.Items[:i], c.Items[i+1:]...) // Remove the item from the slice
+			return nil
 		}
 	}
+	
+	return ErrProductNotFoundCart
 }
 
 // Clear removes all items from the cart

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	httpdtos "go-ecommerce/internal/adapters/api/http/http_dtos"
 	"go-ecommerce/internal/adapters/api/http/utils"
+	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"log/slog"
 	"net/http"
@@ -176,8 +177,18 @@ func (ch *CartHandler) RemoveItemFromCart(r *http.Request, w http.ResponseWriter
 	// Call service to add a product
 	err = ch.srv.RemoveItem(r.Context(), parsedUserId, parsedProductId)
 	if err != nil {
+		if err == domain.ErrAlreadyEmptyCart {
+			httpdtos.RespondError(w, http.StatusConflict, fmt.Sprintf("Error deleting product in cart: %s", err.Error()))
+			return
+		}
+
+		if err == domain.ErrProductNotFoundCart {
+			httpdtos.RespondError(w, http.StatusNotFound, fmt.Sprintf("Error deleting product in cart: %s", err.Error()))
+			return
+		}
+
 		slog.Error("Error remove item from cart", "user_id", userId, "product_id", productId, "error", err)
-		httpdtos.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Error clearing cart: %s", err.Error()))
+		httpdtos.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Error deleting product in cart: %s", err.Error()))
 		return
 	}
 
