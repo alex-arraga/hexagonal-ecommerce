@@ -61,11 +61,16 @@ func (c *Cart) RemoveItem(productID uuid.UUID) error {
 			return nil
 		}
 	}
-	
+
 	return ErrProductNotFoundCart
 }
 
 // Clear removes all items from the cart
-func (c *Cart) Clear() {
+func (c *Cart) Clear() error {
+	if len(c.Items) <= 0 {
+		return ErrAlreadyEmptyCart
+	}
+
 	c.Items = []CartItem{}
+	return nil
 }

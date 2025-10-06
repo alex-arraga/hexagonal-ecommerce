@@ -134,6 +134,11 @@ func (ch *CartHandler) ClearCart(r *http.Request, w http.ResponseWriter) {
 	// Call service to add a product
 	err = ch.srv.Clear(r.Context(), parsedUserId)
 	if err != nil {
+		if err == domain.ErrAlreadyEmptyCart {
+			httpdtos.RespondError(w, http.StatusNoContent, fmt.Sprintf("Error deleting product in cart: %s", err.Error()))
+			return
+		}
+
 		slog.Error("Error clearing cart", "user_id", userId, "error", err)
 		httpdtos.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Error clearing cart: %s", err.Error()))
 		return
@@ -178,7 +183,7 @@ func (ch *CartHandler) RemoveItemFromCart(r *http.Request, w http.ResponseWriter
 	err = ch.srv.RemoveItem(r.Context(), parsedUserId, parsedProductId)
 	if err != nil {
 		if err == domain.ErrAlreadyEmptyCart {
-			httpdtos.RespondError(w, http.StatusConflict, fmt.Sprintf("Error deleting product in cart: %s", err.Error()))
+			httpdtos.RespondError(w, http.StatusNoContent, fmt.Sprintf("Error deleting product in cart: %s", err.Error()))
 			return
 		}
 

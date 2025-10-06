@@ -93,6 +93,11 @@ func (c *CartService) RemoveItem(ctx context.Context, userId, productId uuid.UUI
 
 // Clear implements ports.CartService.
 func (c *CartService) Clear(ctx context.Context, userId uuid.UUID) error {
+	cart := c.loadCart(ctx, userId)
+	err := cart.Clear()
+	if err != nil {
+		return err
+	}
 	cacheKey := cachekeys.Cart(userId.String())
 	return c.cache.Delete(ctx, cacheKey)
 }
