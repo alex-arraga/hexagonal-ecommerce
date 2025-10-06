@@ -35,3 +35,7 @@ var (
 	ErrProductMinLenghtSKU      = errors.New("sku of product must have at least 3 characters")
 	ErrProductNotFound          = errors.New("category not found")
 )
+
+var (
+	ErrNonExistProductCart = errors.New("product not exist in cart, quantity must be a positive number")
+)

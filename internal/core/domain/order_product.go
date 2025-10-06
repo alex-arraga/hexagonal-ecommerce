@@ -11,7 +11,7 @@ type OrderProduct struct {
 	ID        uuid.UUID
 	OrderID   uuid.UUID
 	ProductID uuid.UUID
-	Quantity  uint8
+	Quantity  int16
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
@@ -20,7 +20,7 @@ type OrderProduct struct {
 	Items *Product
 }
 
-func NewOrderProduct(orderID, productID uuid.UUID, quantity uint8) *OrderProduct {
+func NewOrderProduct(orderID, productID uuid.UUID, quantity int16) *OrderProduct {
 	return &OrderProduct{
 		ID:        uuid.Nil, // repository will asign the id
 		OrderID:   orderID,

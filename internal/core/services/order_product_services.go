@@ -17,7 +17,7 @@ func NewOrderProductService(repo ports.OrderProductRepository) ports.OrderProduc
 }
 
 // AddProductToOrder implements ports.OrderProductService.
-func (ops *OrderProductService) AddProductToOrder(ctx context.Context, orderID, productID uuid.UUID, quantity uint8) (*domain.OrderProduct, error) {
+func (ops *OrderProductService) AddProductToOrder(ctx context.Context, orderID, productID uuid.UUID, quantity int16) (*domain.OrderProduct, error) {
 	orderProduct := domain.NewOrderProduct(orderID, productID, quantity)
 	savedOrderProduct, err := ops.repo.SaveOrderProduct(ctx, orderProduct)
 	if err != nil {

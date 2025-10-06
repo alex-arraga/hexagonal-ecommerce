@@ -14,5 +14,5 @@ type OrderProductRepository interface {
 }
 
 type OrderProductService interface {
-	AddProductToOrder(ctx context.Context, orderID, productID uuid.UUID, quantity uint8) (*domain.OrderProduct, error)
+	AddProductToOrder(ctx context.Context, orderID, productID uuid.UUID, quantity int16) (*domain.OrderProduct, error)
 }

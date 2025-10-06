@@ -31,7 +31,7 @@ func (c *CartService) loadCart(ctx context.Context, userId uuid.UUID) *domain.Ca
 
 	// if cart doesn't exist, create one and return
 	if len(data) == 0 {
-		domain.NewCart(userId)
+		return domain.NewCart(userId)
 	}
 
 	var cart *domain.Cart
@@ -60,9 +60,12 @@ func (c *CartService) saveCart(ctx context.Context, cart *domain.Cart) error {
 }
 
 // AddItemToCart implements ports.CartService.
-func (c *CartService) AddItemToCart(ctx context.Context, userId, productId uuid.UUID, quantity uint8) error {
+func (c *CartService) AddItemToCart(ctx context.Context, userId, productId uuid.UUID, quantity int16) error {
 	cart := c.loadCart(ctx, userId)
-	cart.AddItem(productId, quantity)
+	err := cart.AddItem(productId, quantity)
+	if err != nil {
+		return err
+	}
 	return c.saveCart(ctx, cart)
 }
 

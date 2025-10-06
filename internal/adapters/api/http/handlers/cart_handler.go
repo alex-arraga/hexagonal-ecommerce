@@ -16,6 +16,7 @@ type CartHandler struct {
 	srv ports.CartService
 }
 
+// TODO -> Probar todas las request del carrito, el resto funciona correctamente
 func NewCartHandler(srv ports.CartService) *CartHandler {
 	return &CartHandler{srv: srv}
 }
@@ -28,7 +29,7 @@ func (ch *CartHandler) AddProductToCart(r *http.Request, w http.ResponseWriter) 
 	}
 
 	type parameters struct {
-		Quantity *uint8 `json:"quantity"`
+		Quantity *int16 `json:"quantity"`
 	}
 
 	params, err := utils.ParseRequestBody[parameters](r)
@@ -38,7 +39,7 @@ func (ch *CartHandler) AddProductToCart(r *http.Request, w http.ResponseWriter) 
 	}
 
 	// Validate params
-	if params.Quantity == nil || *params.Quantity <= 0 {
+	if params.Quantity == nil {
 		httpdtos.RespondError(w, http.StatusBadRequest, "Quantity is required")
 		return
 	}

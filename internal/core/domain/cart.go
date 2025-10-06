@@ -4,7 +4,7 @@ import "github.com/google/uuid"
 
 type CartItem struct {
 	ProductID uuid.UUID
-	Quantity  uint8
+	Quantity  int16
 }
 
 type Cart struct {
@@ -20,20 +20,32 @@ func NewCart(userID uuid.UUID) *Cart {
 	}
 }
 
-func (c *Cart) AddItem(productId uuid.UUID, quantity uint8) {
+func (c *Cart) AddItem(productId uuid.UUID, quantity int16) error {
 	// Check if the item already exists in the cart
 	for i, item := range c.Items {
 		if item.ProductID == productId {
 			// If it exists, update the quantity
 			c.Items[i].Quantity += quantity
-			return
-		}
 
-		c.Items = append(c.Items, CartItem{
-			ProductID: productId,
-			Quantity:  quantity,
-		})
+			// Validate if quantity is less than 0
+			if c.Items[i].Quantity <= 0 {
+				c.RemoveItem(productId)
+				return nil
+			}
+			return nil
+		}
 	}
+
+	// If product not exist and quantity is negative, return error
+	if quantity < 0 {
+		return ErrNonExistProductCart
+	}
+
+	c.Items = append(c.Items, CartItem{
+		ProductID: productId,
+		Quantity:  quantity,
+	})
+	return nil
 }
 
 // RemoveItem removes an item from the cart by product ID
