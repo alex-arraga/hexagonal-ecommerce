@@ -21,10 +21,10 @@ type SaveOrderInputs struct {
 	SubTotal          float64
 	Disscount         *float64
 	DisscountTypes    *domain.DisscountTypes
-	ExternalReference string
-	PaymentID         string
+	ExternalReference *string
+	PaymentID         *string
 	PayStatus         domain.PayStatus
-	PayStatusDetail   domain.PayStatusDetail
+	PayStatusDetail   *domain.PayStatusDetail
 }
 
 // OrderService is an interface for interacting with order-related business logic

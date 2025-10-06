@@ -69,7 +69,7 @@ type Order struct {
 	PayStatusDetail   *PayStatusDetail
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
-	ExpiresAt         time.Time
+	ExpiresAt         *time.Time
 
 	// Relations
 	User  *User
@@ -85,6 +85,9 @@ type NewOrderInputs struct {
 }
 
 func NewOrder(inputs NewOrderInputs) (*Order, error) {
+	now := time.Now()
+	expireInTreeDays := now.AddDate(0, 0, 3)
+
 	return &Order{
 		ID:                uuid.Nil, // repository will asign the id
 		UserID:            inputs.UserID,
@@ -100,6 +103,9 @@ func NewOrder(inputs NewOrderInputs) (*Order, error) {
 		Disscount:         inputs.Disscount,
 		DisscountType:     inputs.DisscountTypes,
 		Total:             inputs.SubTotal - *inputs.Disscount,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		ExpiresAt:         &expireInTreeDays, // the order is created with 3 days to pay it
 	}, nil
 }
 
@@ -116,6 +122,11 @@ func (o *Order) UpdateOrder(inputs UpdateOrderInputs) error {
 
 	o.PayStatus = inputs.PayStatus
 	o.PayStatusDetail = &inputs.PayStatusDetail
+	o.UpdatedAt = time.Now()
+
+	if o.PayStatus == Approved {
+		o.ExpiresAt = nil
+	}
 
 	return nil
 }

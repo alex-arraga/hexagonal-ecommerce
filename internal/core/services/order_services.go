@@ -44,19 +44,18 @@ func (os *OrderService) SaveOrder(ctx context.Context, inputs ports.SaveOrderInp
 		order = newOrder
 
 	} else {
-		order, err := os.repo.GetOrderById(ctx, inputs.ID)
+		existingOrder, err := os.repo.GetOrderById(ctx, inputs.ID)
 		if err != nil {
 			return nil, err
 		}
 
-		order.UpdateOrder(
-			domain.UpdateOrderInputs{
-				ExternalReference: inputs.ExternalReference,
-				PaymentID:         inputs.PaymentID,
-				PayStatus:         inputs.PayStatus,
-				PayStatusDetail:   inputs.PayStatusDetail,
-			},
-		)
+		existingOrder.UpdateOrder(domain.UpdateOrderInputs{
+			ExternalReference: *inputs.ExternalReference,
+			PaymentID:         *inputs.PaymentID,
+			PayStatus:         domain.PayStatus(inputs.PayStatus),
+			PayStatusDetail:   *inputs.PayStatusDetail,
+		})
+		order = existingOrder
 	}
 
 	result, err := os.repo.SaveOrder(ctx, order)

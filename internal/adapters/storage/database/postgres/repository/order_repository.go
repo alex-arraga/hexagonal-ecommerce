@@ -36,14 +36,14 @@ func (or *OrderRepo) SaveOrder(ctx context.Context, order *domain.Order) (*domai
 
 	// if exist order.ID update, else create new order
 	if order.ID != uuid.Nil {
-		if result := or.db.WithContext(ctx).Where("id = ?", order.ID).Updates(orderDb); result.Error != nil {
+		if result := or.db.WithContext(ctx).Preload("User").Preload("Items").Where("id = ?", order.ID).Updates(orderDb); result.Error != nil {
 			if result.RowsAffected == 0 {
-				return nil, domain.ErrProductNotFound
+				return nil, domain.ErrOrderNotFound
 			}
 			return nil, result.Error
 		}
 	} else {
-		if result := or.db.WithContext(ctx).Create(orderDb); result.Error != nil {
+		if result := or.db.WithContext(ctx).Preload("User").Preload("Items").Create(orderDb); result.Error != nil {
 			return nil, result.Error
 		}
 	}

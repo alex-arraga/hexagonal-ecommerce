@@ -36,7 +36,7 @@ func ConvertOrderDomainToModel(o *domain.Order) *models.OrderModel {
 		PayStatusDetail:   o.PayStatusDetail,
 		CreatedAt:         o.CreatedAt,
 		UpdatedAt:         o.UpdatedAt,
-		ExpiresAt:         o.ExpiresAt,
+		ExpiresAt:         *o.ExpiresAt,
 		Items:             items,
 	}
 }
@@ -78,7 +78,7 @@ func ConvertOrdersDomainToModels(orders []*domain.Order) []*models.OrderModel {
 			PayStatusDetail:   o.PayStatusDetail,
 			CreatedAt:         o.CreatedAt,
 			UpdatedAt:         o.UpdatedAt,
-			ExpiresAt:         o.ExpiresAt,
+			ExpiresAt:         *o.ExpiresAt,
 			Items:             items,
 		})
 	}
@@ -117,7 +117,7 @@ func ConvertOrderModelToDomain(o *models.OrderModel) *domain.Order {
 		PayStatusDetail:   o.PayStatusDetail,
 		CreatedAt:         o.CreatedAt,
 		UpdatedAt:         o.UpdatedAt,
-		ExpiresAt:         o.ExpiresAt,
+		ExpiresAt:         &o.ExpiresAt,
 		Items:             items,
 	}
 }
@@ -139,7 +139,7 @@ func ConvertOrdersModelsToDomain(orders []*models.OrderModel) []*domain.Order {
 			}
 		}
 	}
-	
+
 	for _, o := range orders {
 		ordersDomain = append(ordersDomain, &domain.Order{
 			ID:                o.ID,
@@ -158,7 +158,7 @@ func ConvertOrdersModelsToDomain(orders []*models.OrderModel) []*domain.Order {
 			PayStatusDetail:   o.PayStatusDetail,
 			CreatedAt:         o.CreatedAt,
 			UpdatedAt:         o.UpdatedAt,
-			ExpiresAt:         o.ExpiresAt,
+			ExpiresAt:         &o.ExpiresAt,
 		})
 	}
 

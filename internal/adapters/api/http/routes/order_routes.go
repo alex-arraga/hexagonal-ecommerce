@@ -12,10 +12,10 @@ func LoadOrderRoutes(r chi.Router, h *handlers.OrderHandler) {
 		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 			h.SaveOrder(r, w)
 		})
-		r.Put("/{id}", func(w http.ResponseWriter, r *http.Request) {
+		r.Put("/{order_id}", func(w http.ResponseWriter, r *http.Request) {
 			h.SaveOrder(r, w)
 		})
-		r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+		r.Get("/{order_id}", func(w http.ResponseWriter, r *http.Request) {
 			h.GetOrderByID(r, w)
 		})
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {

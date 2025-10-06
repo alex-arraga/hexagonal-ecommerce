@@ -22,7 +22,6 @@ func NewOrderHandler(orderService ports.OrderService) *OrderHandler {
 
 func (oh *OrderHandler) SaveOrder(r *http.Request, w http.ResponseWriter) {
 	type parameters struct {
-		ID                *uuid.UUID              `json:"id,omitempty"`
 		Provider          domain.Providers        `json:"provider"`
 		UserID            uuid.UUID               `json:"user_id"`
 		PaymentID         *string                 `json:"payment_id,omitempty"`
@@ -36,7 +35,6 @@ func (oh *OrderHandler) SaveOrder(r *http.Request, w http.ResponseWriter) {
 		Paid              bool                    `json:"paid"`
 		PayStatus         domain.PayStatus        `json:"pay_status"`
 		PayStatusDetail   *domain.PayStatusDetail `json:"pay_status_detail,omitempty"`
-		ExpiresAt         string                  `json:"expires_at"`
 	}
 
 	params, err := utils.ParseRequestBody[parameters](r)
@@ -45,30 +43,33 @@ func (oh *OrderHandler) SaveOrder(r *http.Request, w http.ResponseWriter) {
 		return
 	}
 
+	// extract id from url param
+	orderId := chi.URLParam(r, "order_id")
+
+	// set id to avoid panic
+	var id uuid.UUID
+	if orderId != "" {
+		parsed, err := uuid.Parse(orderId)
+		if err != nil {
+			httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("product id must be a valid uuid: %s", err))
+			return
+		}
+		id = parsed
+	} else {
+		id = uuid.Nil
+	}
+
 	// Verify HTTP method
-	if r.Method != http.MethodPut {
+	if r.Method != http.MethodPut && r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if r.Method == http.MethodPut && params.ID == nil {
+	if r.Method == http.MethodPut && id == uuid.Nil {
 		http.Error(w, "Method PUT requires the OrderID", http.StatusMethodNotAllowed)
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	if r.Method == http.MethodPost && params.ID != nil {
-		http.Error(w, "Method POST doesn't accept a OrderID", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Validate required fields
-	if params.UserID == uuid.Nil {
-		httpdtos.RespondError(w, http.StatusBadRequest, "UserID is required")
-		return
-	}
 	if params.Currency == "" {
 		httpdtos.RespondError(w, http.StatusBadRequest, "Currency is required")
 		return
@@ -90,25 +91,17 @@ func (oh *OrderHandler) SaveOrder(r *http.Request, w http.ResponseWriter) {
 		return
 	}
 
-	// Set id to avoid panic
-	var id uuid.UUID
-	if params.ID == nil {
-		id = uuid.Nil
-	} else {
-		id = *params.ID
-	}
-
 	inputs := ports.SaveOrderInputs{
 		ID:                id,
 		UserID:            params.UserID,
-		PaymentID:         *params.PaymentID,
-		ExternalReference: *params.ExternalReference,
+		PaymentID:         params.PaymentID,
+		ExternalReference: params.ExternalReference,
 		Currency:          params.Currency,
 		SubTotal:          params.SubTotal,
 		Disscount:         params.Disscount,
 		DisscountTypes:    params.DisscountType,
 		PayStatus:         params.PayStatus,
-		PayStatusDetail:   *params.PayStatusDetail,
+		PayStatusDetail:   params.PayStatusDetail,
 	}
 
 	result, err := oh.srv.SaveOrder(r.Context(), inputs)
