@@ -55,6 +55,12 @@ func (c *CartService) saveCart(ctx context.Context, cart *domain.Cart) error {
 		return err
 	}
 
+	// If cart hasn't items, delete it
+	if len(cart.Items) <= 0 {
+		err := c.cache.Delete(ctx, cacheKey)
+		return err
+	}
+
 	// set cache with new values of cart
 	return c.cache.Set(ctx, cacheKey, data, cachettl.Cart)
 }
