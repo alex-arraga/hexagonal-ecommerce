@@ -60,6 +60,11 @@ type Order struct {
 	SecureToken       *uuid.UUID // token that allows the user to view the status of the order
 	ExternalReference *string
 	Currency          Currencies
+	Fee               *float64
+	Installments      *uint8
+	NetReceivedAmount *float64
+	PayMethod         *string
+	PayResource       *string
 	SubTotal          float64
 	Disscount         *float64
 	DisscountType     *DisscountTypes
@@ -69,6 +74,7 @@ type Order struct {
 	PayStatusDetail   *PayStatusDetail
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+	PaidAt            *time.Time
 	ExpiresAt         *time.Time
 
 	// Relations
@@ -110,10 +116,17 @@ func NewOrder(inputs NewOrderInputs) (*Order, error) {
 }
 
 type UpdateOrderInputs struct {
-	ExternalReference string
 	PaymentID         string
 	PayStatus         PayStatus
 	PayStatusDetail   PayStatusDetail
+	PayMethod         *string
+	PayResource       *string
+	Installments      *uint8
+	Paid              bool
+	Fee               *float64
+	NetReceivedAmount *float64
+	ExternalReference string
+	PaidAt            *time.Time
 }
 
 func (o *Order) UpdateOrder(inputs UpdateOrderInputs) error {
