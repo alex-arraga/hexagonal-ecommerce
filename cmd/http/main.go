@@ -6,6 +6,7 @@ import (
 	"go-ecommerce/internal/adapters/api/http/routes"
 	"go-ecommerce/internal/adapters/config"
 	"go-ecommerce/internal/adapters/logger"
+	"go-ecommerce/internal/adapters/mercadopago"
 	"go-ecommerce/internal/adapters/security"
 	"go-ecommerce/internal/adapters/storage/cache/redis"
 	"go-ecommerce/internal/adapters/storage/database/postgres"
@@ -59,6 +60,9 @@ func main() {
 	slog.Info("Successfully connected to the cache server")
 
 	hasher := &security.Hasher{}
+	httpClient := &http.Client{
+		Timeout: time.Second * 2,
+	}
 
 	// dependency injection
 
@@ -90,6 +94,9 @@ func main() {
 	orderSrv := services.NewOrderService(orderRepo, cache)
 	orderHandler := handlers.NewOrderHandler(orderSrv)
 
+	paymentSrv := mercadopago.NewPaymentService(orderRepo, httpClient, config.HTTP.Domain, config.PaymentProvider.MercadoPago.AccessToken)
+	paymentHandler := handlers.NewPaymentHandler(paymentSrv)
+
 	// root router
 	router := chi.NewRouter()
 
@@ -106,6 +113,7 @@ func main() {
 	routes.LoadProductRoutes(router, prodHandler)
 	routes.LoadOrderRoutes(router, orderHandler)
 	routes.LoadCartRoutes(router, cartHandler)
+	routes.LoadPaymentRoutes(router, paymentHandler)
 
 	// Configurar servidor HTTP
 	s := &http.Server{
