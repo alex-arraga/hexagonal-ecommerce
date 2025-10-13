@@ -2,7 +2,7 @@ package mercadopago
 
 import "go-ecommerce/internal/core/domain"
 
-// Preference request params
+// ? Preference request params
 type MpPreferenceRequest struct {
 	AutoReturn          string         `json:"auto_return"`
 	StatementDescriptor string         `json:"statement_descriptor"`
@@ -56,40 +56,39 @@ type ExcludedMethod struct {
 	ID string `json:"id"`
 }
 
-// Payments object
+// ? Payments objects
 type TransactionDetails struct {
-	TotalPaidAmount   float64
-	NetReceivedAmount float64
-	InstallmentAmount float64
+	TotalPaidAmount   float64 `json:"total_paid_amount"`
+	NetReceivedAmount float64 `json:"net_received_amount"`
+	InstallmentAmount float64 `json:"installment_amount"`
 }
 
 type Order struct {
-	ID   string
-	Type string
+	ID   string `json:"id"`
+	Type string `json:"type"`
 }
 
 type PayMethod struct {
-	ID   *string
-	Type *string
+	ID   *string `json:"id"`
+	Type *string `json:"type"`
 }
 
 type MpSimplifiedPayment struct {
-	ID                int
-	Status            domain.PayStatus
-	StatusDetail      domain.PayStatusDetail
-	DateApproved      *string
-	TransactionAmount float64
-	CurrencyID        string
-	Installments      uint8
-	ExternalReference string
-	PayMethod         PayMethod
-
-	Payer              MpPayer
-	TransactionDetails TransactionDetails
-	Order              *Order
+	ID                 int                    `json:"id"`
+	Status             domain.PayStatus       `json:"status"`
+	StatusDetail       domain.PayStatusDetail `json:"status_detail"`
+	DateApproved       *string                `json:"date_approved"`
+	TransactionAmount  float64                `json:"transaction_amount"`
+	CurrencyID         string                 `json:"currency_id"`
+	Installments       uint8                  `json:"installments"`
+	ExternalReference  string                 `json:"external_reference"`
+	PayMethod          PayMethod              `json:"payment_method"`
+	Payer              MpPayer                `json:"payer"`
+	TransactionDetails TransactionDetails     `json:"transaction_details"`
+	Order              *Order                 `json:"order"`
 }
 
-// Merchant Order object
+// ? Merchant Order objects
 type MerchantItem struct {
 	ID          string      `json:"id"`
 	CategoryID  string      `json:"category_id"`
