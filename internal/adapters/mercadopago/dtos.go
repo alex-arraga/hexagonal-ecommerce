@@ -74,7 +74,7 @@ type PayMethod struct {
 }
 
 type MpSimplifiedPayment struct {
-	ID                string
+	ID                int
 	Status            domain.PayStatus
 	StatusDetail      domain.PayStatusDetail
 	DateApproved      *string
@@ -89,19 +89,57 @@ type MpSimplifiedPayment struct {
 	Order              *Order
 }
 
-/*
-   const updateOrder: UpdateOrderFromWebhookType = {
-     pay_status: payment.status as PayStatusType,
-     pay_status_detail: payment.status_detail,
-     payment_id: payment.id.toString(),
-     merchant_order_id: merchantOrderId,
-     fee: fee,
-     installments: payment.installments,
-     net_received_amount: payment.transaction_details.net_received_amount,
-     pay_method: payment.payment_method.id,
-     pay_resource: payment.payment_method.type,
-     paid_at: paidAt,
-     updated_at: new Date(Date.now()).toISOString(),
-     expires_at: expiresAt,
-   }
-*/
+// Merchant Order object
+type MerchantItem struct {
+	ID          string      `json:"id"`
+	CategoryID  string      `json:"category_id"`
+	CurrencyID  string      `json:"currency_id"`
+	Description string      `json:"description"`
+	PictureURL  interface{} `json:"picture_url"`
+	Title       string      `json:"title"`
+	Quantity    int         `json:"quantity"`
+	UnitPrice   int         `json:"unit_price"`
+}
+
+type MerchantPayment struct {
+	ID                int                    `json:"id"`
+	TransactionAmount int                    `json:"transaction_amount"`
+	TotalPaidAmount   int                    `json:"total_paid_amount"`
+	ShippingCost      int                    `json:"shipping_cost"`
+	CurrencyID        string                 `json:"currency_id"`
+	Status            domain.PayStatus       `json:"status"`
+	StatusDetail      domain.PayStatusDetail `json:"status_detail"`
+	OperationType     string                 `json:"operation_type"`
+	DateApproved      string                 `json:"date_approved"`
+	DateCreated       string                 `json:"date_created"`
+	LastModified      string                 `json:"last_modified"`
+	AmountRefunded    int                    `json:"amount_refunded"`
+}
+
+type MerchantCollector struct {
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	Nickname string `json:"nickname"`
+}
+
+type MpSimplifiedMerchantOrder struct {
+	ID                int               `json:"id"`
+	Status            string            `json:"status"`
+	ExternalReference string            `json:"external_reference"`
+	PreferenceID      string            `json:"preference_id"`
+	Payments          []MerchantPayment `json:"payments"`
+	Shipments         []interface{}     `json:"shipments"`
+	Payouts           []interface{}     `json:"payouts"`
+	Collector         MerchantCollector `json:"collector"`
+	Marketplace       string            `json:"marketplace"`
+	NotificationURL   string            `json:"notification_url"`
+	ShippingCost      int               `json:"shipping_cost"`
+	TotalAmount       int               `json:"total_amount"`
+	SiteID            string            `json:"site_id"`
+	PaidAmount        int               `json:"paid_amount"`
+	RefundedAmount    int               `json:"refunded_amount"`
+	Payer             MpPayer           `json:"payer"`
+	Items             []MerchantItem    `json:"items"`
+	Cancelled         bool              `json:"cancelled"`
+	OrderStatus       string            `json:"order_status"`
+}

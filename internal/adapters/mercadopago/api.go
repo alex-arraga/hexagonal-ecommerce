@@ -10,6 +10,7 @@ import (
 	"go-ecommerce/internal/core/ports"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,8 +32,8 @@ func NewPaymentService(repo ports.OrderRepository, client *http.Client, domain, 
 	}
 }
 
-// Helper func to create a preference
-func NewPreference(order *domain.Order, domain string) MpPreferenceRequest {
+// Helpers funcs
+func generatePreference(order *domain.Order, domain string) MpPreferenceRequest {
 	items := make([]MpItem, len(order.Items))
 
 	for _, orderItem := range order.Items {
@@ -79,59 +80,10 @@ func NewPreference(order *domain.Order, domain string) MpPreferenceRequest {
 	return preference
 }
 
-// CreatePayment implements ports.PaymentProvider.
-func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) (*string, error) {
-
-	order, err := ps.repo.GetOrderById(ctx, orderId)
-	if err != nil {
-		return nil, err
-	}
-
-	preference := NewPreference(order, ps.domain)
-
-	jsonBody, _ := json.Marshal(preference)
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.com/checkout/preferences", bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ps.secretToken))
-
-	res, err := ps.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	var result struct {
-		InitPoint string `json:"init_point"`
-	}
-
-	json.NewDecoder(res.Body).Decode(&result)
-	return &result.InitPoint, nil
-}
-
-// VerifyPayment implements ports.PaymentProvider.
-func (ps *PaymentService) VerifyPayment(ctx context.Context, paymentId, topic *string) error {
-	if paymentId == nil && topic == nil {
-		return errors.New("parameters id or topic not found")
-	}
-
-	if paymentId != nil && *topic == "payment" {
-		return ps.handlePayment(ctx, *paymentId)
-	}
-
-	if paymentId != nil && *topic == "merchant_order" {
-		return ps.handleMerchantOrder(ctx, *paymentId)
-	}
-
-	return nil
-}
-
-func (ps *PaymentService) handlePayment(ctx context.Context, id string) error {
-	url := fmt.Sprintf("https://api.mercadopago.com/v1/payments/%s", id)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
+func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) error {
+	// prepare request to call mp api
+	url := fmt.Sprintf("https://api.mercadopago.com/v1/payments/%s", paymentId)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return err
 	}
@@ -179,8 +131,9 @@ func (ps *PaymentService) handlePayment(ctx context.Context, id string) error {
 	}
 
 	// if the order has already been updated with this payment_id, return and do nothing
-	if order.PaymentID == &payment.ID {
-		return fmt.Errorf("payment: %s already processed for order: %s", payment.ID, order.ID)
+	strPaymentId := strconv.Itoa(payment.ID)
+	if order.PaymentID == &strPaymentId {
+		return fmt.Errorf("payment: %v already processed for order: %s", payment.ID, order.ID)
 	}
 
 	// update order with payment data
@@ -220,6 +173,98 @@ func (ps *PaymentService) handlePayment(ctx context.Context, id string) error {
 	return err
 }
 
-func (ps *PaymentService) handleMerchantOrder(ctx context.Context, id string) error {
+func (ps *PaymentService) handleMerchantOrder(ctx context.Context, orderId string) error {
+	// prepare request to call mp api
+	url := fmt.Sprintf("https://api.mercadopago.com/merchant_orders/%s", orderId)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	// set headers and fetching request
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ps.secretToken))
+
+	resp, err := ps.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// TODO: eliminar solo para ver el body
+	jsonBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Print(jsonBytes)
+
+	merchantOrder := &MpSimplifiedMerchantOrder{}
+	json.NewDecoder(resp.Body).Decode(merchantOrder)
+
+	// seach and find approved payments inside merchant order, if exist call handlePayment, else return an error
+	found := false
+
+	for _, payment := range merchantOrder.Payments {
+		if payment.Status == domain.Approved && payment.StatusDetail == domain.Accredited {
+			strPaymentId := fmt.Sprint(payment.ID)
+			ps.handlePayment(ctx, strPaymentId)
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("merchant order %s received, but no approved/accredited payment found", orderId)
+	}
+
+	return nil
+}
+
+// CreatePayment implements ports.PaymentProvider.
+func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) (*string, error) {
+
+	order, err := ps.repo.GetOrderById(ctx, orderId)
+	if err != nil {
+		return nil, err
+	}
+
+	preference := generatePreference(order, ps.domain)
+
+	jsonBody, _ := json.Marshal(preference)
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.com/checkout/preferences", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ps.secretToken))
+
+	res, err := ps.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	var result struct {
+		InitPoint string `json:"init_point"`
+	}
+
+	json.NewDecoder(res.Body).Decode(&result)
+	return &result.InitPoint, nil
+}
+
+// VerifyPayment implements ports.PaymentProvider.
+func (ps *PaymentService) VerifyPayment(ctx context.Context, paymentId, topic *string) error {
+	if paymentId == nil && topic == nil {
+		return errors.New("parameters id or topic not found")
+	}
+
+	if paymentId != nil && *topic == "payment" {
+		return ps.handlePayment(ctx, *paymentId)
+	}
+
+	if paymentId != nil && *topic == "merchant_order" {
+		return ps.handleMerchantOrder(ctx, *paymentId)
+	}
+
 	return nil
 }
