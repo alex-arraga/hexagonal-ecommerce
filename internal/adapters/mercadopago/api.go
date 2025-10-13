@@ -52,7 +52,7 @@ func generatePreference(order *domain.Order, domain string) MpPreferenceRequest 
 		AutoReturn:          "approved",
 		StatementDescriptor: "Golang Ecommerce",
 		ExternalReference:   order.ID.String(),
-		NotificationURL:     fmt.Sprintf("%s/order/api/payment/mp/webhook", domain),
+		NotificationURL:     fmt.Sprintf("%s/payment/mp/webhook", domain),
 		BackUrls: MpBackUrls{
 			Success: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
 			Failure: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
@@ -66,13 +66,13 @@ func generatePreference(order *domain.Order, domain string) MpPreferenceRequest 
 		PaymentMethods: PaymentMethods{
 			Installments: 6,
 			ExcludedPaymentTypes: []ExcludedType{
-				ExcludedType{ID: "atm"},
-				ExcludedType{ID: "ticket"},
-				ExcludedType{ID: "bank_transfer"},
+				{ID: "atm"},
+				{ID: "ticket"},
+				{ID: "bank_transfer"},
 			},
 			ExcludedPaymentMethods: []ExcludedMethod{
-				ExcludedMethod{ID: "servipag"},
-				ExcludedMethod{ID: "sencillito"},
+				{ID: "servipag"},
+				{ID: "sencillito"},
 			},
 		},
 	}
