@@ -4,10 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
+	"io"
 	"net/http"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type PaymentService struct {
@@ -75,9 +80,9 @@ func NewPreference(order *domain.Order, domain string) MpPreferenceRequest {
 }
 
 // CreatePayment implements ports.PaymentProvider.
-func (ps *PaymentService) CreatePayment(ctx context.Context, params ports.CreatePaymentParams) (*string, error) {
+func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) (*string, error) {
 
-	order, err := ps.repo.GetOrderById(ctx, params.OrderID)
+	order, err := ps.repo.GetOrderById(ctx, orderId)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +113,113 @@ func (ps *PaymentService) CreatePayment(ctx context.Context, params ports.Create
 }
 
 // VerifyPayment implements ports.PaymentProvider.
-func (p *PaymentService) VerifyPayment(ctx context.Context, paymentId string) (string, error) {
-	panic("unimplemented")
+func (ps *PaymentService) VerifyPayment(ctx context.Context, paymentId, topic *string) error {
+	if paymentId == nil && topic == nil {
+		return errors.New("parameters id or topic not found")
+	}
+
+	if paymentId != nil && *topic == "payment" {
+		return ps.handlePayment(ctx, *paymentId)
+	}
+
+	if paymentId != nil && *topic == "merchant_order" {
+		return ps.handleMerchantOrder(ctx, *paymentId)
+	}
+
+	return nil
+}
+
+func (ps *PaymentService) handlePayment(ctx context.Context, id string) error {
+	url := fmt.Sprintf("https://api.mercadopago.com/v1/payments/%s", id)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
+	if err != nil {
+		return err
+	}
+
+	// set headers and fetching request
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer: %s", ps.secretToken))
+
+	resp, err := ps.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// TODO: eliminar esto, solo para ver el objeto
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Print(bodyBytes)
+
+	// transform body in payment object
+	payment := &MpSimplifiedPayment{}
+	json.NewDecoder(resp.Body).Decode(payment)
+
+	parsedID, err := uuid.Parse(payment.ExternalReference)
+	if err != nil {
+		return err
+	}
+
+	// obtain order to update
+	order, err := ps.repo.GetOrderById(ctx, parsedID)
+	if err != nil {
+		return err
+	}
+
+	// validations and handling errors
+	// external_reference must be equal than order id
+	if payment.ExternalReference != order.ID.String() {
+		return fmt.Errorf("payment: %s external_reference does not match with order: %s", payment.ExternalReference, order.ID)
+	}
+
+	// avoids updating a order with an approved payment but that was never was credited due to account errors or holds
+	if payment.TransactionDetails.NetReceivedAmount <= 0 {
+		return fmt.Errorf("net received amount is 0 or less for payment: %v", payment.ID)
+	}
+
+	// if the order has already been updated with this payment_id, return and do nothing
+	if order.PaymentID == &payment.ID {
+		return fmt.Errorf("payment: %s already processed for order: %s", payment.ID, order.ID)
+	}
+
+	// update order with payment data
+	successfullyPayment := payment.Status == domain.Approved && payment.StatusDetail == domain.Accredited
+	fee := payment.TransactionAmount - payment.TransactionDetails.NetReceivedAmount
+
+	var paidAt time.Time
+	if successfullyPayment {
+		paidAt = time.Now()
+	}
+
+	var isPaid bool
+	if successfullyPayment {
+		isPaid = true
+	}
+
+	dataToUpdate := domain.UpdateOrderInputs{
+		PayStatus:         domain.PayStatus(payment.Status),
+		PayStatusDetail:   domain.PayStatusDetail(payment.StatusDetail),
+		PaymentID:         fmt.Sprint(payment.ID),
+		PayMethod:         payment.PayMethod.ID,
+		PayResource:       payment.PayMethod.Type,
+		Installments:      &payment.Installments,
+		ExternalReference: payment.ExternalReference,
+		NetReceivedAmount: &payment.TransactionDetails.NetReceivedAmount,
+		Fee:               &fee,
+		PaidAt:            &paidAt,
+		Paid:              isPaid,
+	}
+
+	err = order.UpdateOrder(dataToUpdate)
+	if err != nil {
+		return err
+	}
+
+	_, err = ps.repo.SaveOrder(ctx, order)
+	return err
+}
+
+func (ps *PaymentService) handleMerchantOrder(ctx context.Context, id string) error {
+	return nil
 }

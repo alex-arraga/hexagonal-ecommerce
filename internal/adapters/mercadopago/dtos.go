@@ -1,5 +1,7 @@
 package mercadopago
 
+import "go-ecommerce/internal/core/domain"
+
 // Preference request params
 type MpPreferenceRequest struct {
 	AutoReturn          string         `json:"auto_return"`
@@ -53,3 +55,53 @@ type ExcludedType struct {
 type ExcludedMethod struct {
 	ID string `json:"id"`
 }
+
+// Payments object
+type TransactionDetails struct {
+	TotalPaidAmount   float64
+	NetReceivedAmount float64
+	InstallmentAmount float64
+}
+
+type Order struct {
+	ID   string
+	Type string
+}
+
+type PayMethod struct {
+	ID   *string
+	Type *string
+}
+
+type MpSimplifiedPayment struct {
+	ID                string
+	Status            domain.PayStatus
+	StatusDetail      domain.PayStatusDetail
+	DateApproved      *string
+	TransactionAmount float64
+	CurrencyID        string
+	Installments      uint8
+	ExternalReference string
+	PayMethod         PayMethod
+
+	Payer              MpPayer
+	TransactionDetails TransactionDetails
+	Order              *Order
+}
+
+/*
+   const updateOrder: UpdateOrderFromWebhookType = {
+     pay_status: payment.status as PayStatusType,
+     pay_status_detail: payment.status_detail,
+     payment_id: payment.id.toString(),
+     merchant_order_id: merchantOrderId,
+     fee: fee,
+     installments: payment.installments,
+     net_received_amount: payment.transaction_details.net_received_amount,
+     pay_method: payment.payment_method.id,
+     pay_resource: payment.payment_method.type,
+     paid_at: paidAt,
+     updated_at: new Date(Date.now()).toISOString(),
+     expires_at: expiresAt,
+   }
+*/
