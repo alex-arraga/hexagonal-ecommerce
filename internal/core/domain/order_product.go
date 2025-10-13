@@ -16,8 +16,8 @@ type OrderProduct struct {
 	UpdatedAt time.Time
 
 	// Relations
-	Order *Order
-	Items *Product
+	Order   *Order
+	Product *Product
 }
 
 func NewOrderProduct(orderID, productID uuid.UUID, quantity int16) *OrderProduct {

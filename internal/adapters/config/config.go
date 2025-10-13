@@ -10,15 +10,25 @@ import (
 
 type (
 	Container struct {
-		App   *App
-		Redis *Redis
-		DB    *DB
-		HTTP  *HTTP
+		App             *App
+		Redis           *Redis
+		DB              *DB
+		HTTP            *HTTP
+		PaymentProvider *PaymentProvider
 	}
 
 	App struct {
 		Name string
 		Env  string
+	}
+
+	MercadoPago struct {
+		PublicKey   string
+		AccessToken string
+	}
+
+	PaymentProvider struct {
+		MercadoPago MercadoPago
 	}
 
 	Redis struct {
@@ -36,7 +46,7 @@ type (
 
 	HTTP struct {
 		Env            string
-		URL            string
+		Domain         string
 		Port           string
 		AllowedOrigins []string
 	}
@@ -71,6 +81,13 @@ func New() (*Container, error) {
 		DB:       0,
 	}
 
+	pp := &PaymentProvider{
+		MercadoPago: MercadoPago{
+			PublicKey:   getEnv("MERCADO_PAGO_PUBLIC_KEY"),
+			AccessToken: getEnv("MERCADO_PAGO_ACCESS_TOKEN"),
+		},
+	}
+
 	db := &DB{
 		DSN:                getEnv("DB_DSN"),
 		MaxOpenConnections: getEnv("DB_MAX_OPEN_CONNECTIONS"),
@@ -82,7 +99,8 @@ func New() (*Container, error) {
 	allowedOriginsOpts := strings.Split(allowedOriginsStr, ",")
 
 	http := &HTTP{
-		URL:            getEnv("APP_URL"),
+		Domain:         getEnv("APP_DOMAIN"),
+		Env:            getEnv("APP_ENV"),
 		Port:           getEnv("APP_PORT"),
 		AllowedOrigins: allowedOriginsOpts,
 	}
@@ -92,6 +110,7 @@ func New() (*Container, error) {
 		redis,
 		db,
 		http,
+		pp,
 	}, nil
 
 }
