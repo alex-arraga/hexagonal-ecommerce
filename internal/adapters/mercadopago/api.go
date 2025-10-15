@@ -66,15 +66,12 @@ func (ps *PaymentService) generatePreference(order *domain.Order, user *domain.U
 	preference := MpPreferenceRequest{
 		AutoReturn:          "approved",
 		StatementDescriptor: "Golang Ecommerce",
-		ExternalReference:   order.ID.String(),
+		ExternalReference:   fmt.Sprint(order.ID),
 		NotificationURL:     fmt.Sprintf("%s/payment/mp/webhook", domain),
 		BackUrls: MpBackUrls{
-			Success: fmt.Sprintf("%s/order", domain),
-			// Success: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
-			Failure: fmt.Sprintf("%s/order", domain),
-			// Failure: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
-			Pending: fmt.Sprintf("%s/order", domain),
-			// Pending: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
+			Success: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
+			Failure: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
+			Pending: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
 		},
 		Items: items,
 		Payer: MpPayer{
@@ -265,7 +262,6 @@ func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) 
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ps.secretToken))
-	// Error MercadoPago (400): {"message":"quantity invalid","error":"invalid_items","status":400,"cause":null}
 
 	res, err := ps.httpClient.Do(req)
 	if err != nil {
@@ -275,7 +271,6 @@ func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) 
 
 	if res.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(res.Body)
-		fmt.Printf("Error MercadoPago (%d): %s\n", res.StatusCode, string(bodyBytes))
 		slog.Error("Error in mercado pago response", "error", string(bodyBytes), "code", res.StatusCode)
 		return nil, fmt.Errorf("bad request to MercadoPago")
 	}
