@@ -28,28 +28,29 @@ const (
 )
 
 const (
-	Approved    PayStatus = "approved"     //
-	Pending     PayStatus = "pending"      //
-	InProcess   PayStatus = "in_process"   //
-	Authorized  PayStatus = "authorized"   //
-	Cancelled   PayStatus = "cancelled"    //
-	Refunded    PayStatus = "refunded"     //
-	ChargedBack PayStatus = "charged_back" //
-	Rejected    PayStatus = "rejected"     //
-	Expired     PayStatus = "expired"      //
-	SoftDelete  PayStatus = "soft_delete"  //
-	NonExistent PayStatus = "non-existent" //
+	Approved    PayStatus = "approved"     // The payment has been approved
+	Pending     PayStatus = "pending"      // The payment has been initiated but has not yet been processed by the payment method
+	InProcess   PayStatus = "in_process"   // The payment is being validated (e.g., manual review)
+	Authorized  PayStatus = "authorized"   // The payment was authorized by the issuer (bank or card) but has not yet been captured; the funds are reserved, not debited.
+	Cancelled   PayStatus = "cancelled"    // The payment was canceled before completion
+	Refunded    PayStatus = "refunded"     // The payment was returned to the user
+	ChargedBack PayStatus = "charged_back" // The buyer disputed the payment and the issuer reversed the transaction (chargeback). The money is returned to the buyer.
+	Rejected    PayStatus = "rejected"     // The payment was declined. This may be due to insufficient funds, incorrect details, etc
+	Expired     PayStatus = "expired"      // The pay order has expired
+	SoftDelete  PayStatus = "soft_delete"  // Order that remained unpaid for a long period of time and will be deleted
+	NonExistent PayStatus = "non-existent" // Order does not exist, the user created their reservation but did not attempt to pay for it
 )
 
+// PayStatusDetail represents detailed payment status information.
 const (
-	Accredited        PayStatusDetail = "accredited"            //
-	PendingCapture    PayStatusDetail = "pending_capture"       //
-	PartiallyRefunded PayStatusDetail = "partially_refunded"    //
-	InProcessDetail   PayStatusDetail = "in_process"            //
-	ExpiredDetail     PayStatusDetail = "expired"               //
-	BankError         PayStatusDetail = "bank_error"            //
-	Blacklist         PayStatusDetail = "cc_rejected_blacklist" //
-	NonExistentDetail PayStatusDetail = "non-existent"          //
+	Accredited        PayStatusDetail = "accredited"            // Payment approved and successfully credited; funds are now available.
+	PendingCapture    PayStatusDetail = "pending_capture"       // Payment authorized but pending manual capture; funds are reserved, not yet charged.
+	PartiallyRefunded PayStatusDetail = "partially_refunded"    // Payment was partially refunded; only part of the amount was returned to the buyer.
+	InProcessDetail   PayStatusDetail = "in_process"            // Payment is under review or being processed; not yet completed.
+	ExpiredDetail     PayStatusDetail = "expired"               // Payment request expired before completion (e.g., buyer didn't finish in time).
+	BankError         PayStatusDetail = "bank_error"            // Payment failed due to a bank or issuer error.
+	Blacklist         PayStatusDetail = "cc_rejected_blacklist" // Payment rejected because the card or user is blacklisted.
+	NonExistentDetail PayStatusDetail = "non-existent"          // No payment information found (invalid or deleted payment ID).
 )
 
 type Order struct {
@@ -57,7 +58,7 @@ type Order struct {
 	Providers         Providers
 	UserID            uuid.UUID
 	PaymentID         *string
-	SecureToken       *uuid.UUID // token that allows the user to view the status of the order
+	SecureToken       uuid.UUID // Allows the user to view the order status. Will be automatically generate by gorm
 	ExternalReference *string
 	Currency          Currencies
 	Fee               *float64
@@ -101,7 +102,7 @@ func NewOrder(inputs NewOrderInputs) (*Order, error) {
 		PayStatus:         Pending,
 		Providers:         MercadoPago,
 		ExternalReference: nil,
-		SecureToken:       nil,
+		SecureToken:       uuid.Nil,
 		PaymentID:         nil,
 		PayStatusDetail:   nil,
 		Paid:              false,
