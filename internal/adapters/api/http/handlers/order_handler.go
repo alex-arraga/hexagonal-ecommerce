@@ -121,7 +121,7 @@ func (oh *OrderHandler) GetOrderByID(r *http.Request, w http.ResponseWriter) {
 	}
 
 	// Extract order ID from URL parameters
-	orderID := chi.URLParam(r, "id")
+	orderID := chi.URLParam(r, "order_id")
 	if orderID == "" {
 		httpdtos.RespondError(w, http.StatusBadRequest, "OrderID is required")
 		return

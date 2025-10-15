@@ -3,10 +3,10 @@ package handlers
 import (
 	"fmt"
 	httpdtos "go-ecommerce/internal/adapters/api/http/http_dtos"
+	"go-ecommerce/internal/adapters/api/http/utils"
 	"go-ecommerce/internal/core/ports"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -19,6 +19,10 @@ func NewPaymentHandler(paymentService ports.PaymentProvider) *PaymentHandler {
 }
 
 func (ph *PaymentHandler) StartTransaction(r *http.Request, w http.ResponseWriter) {
+	type parameters struct {
+		OrderID string `json:"order_id"`
+	}
+
 	// Verify HTTP method
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -26,13 +30,13 @@ func (ph *PaymentHandler) StartTransaction(r *http.Request, w http.ResponseWrite
 	}
 
 	// Get order id and converts in uuid
-	orderID := chi.URLParam(r, "order_id")
-	if orderID == "" {
-		httpdtos.RespondError(w, http.StatusBadRequest, "OrderID is required to starting transaction")
+	params, err := utils.ParseRequestBody[parameters](r)
+	if err != nil {
+		httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Invalid input: %s", err))
 		return
 	}
 
-	uuid, err := uuid.Parse(orderID)
+	uuid, err := uuid.Parse(params.OrderID)
 	if err != nil {
 		httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Order id must be a valid uuid: %s", err))
 		return

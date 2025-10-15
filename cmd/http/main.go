@@ -94,7 +94,14 @@ func main() {
 	orderSrv := services.NewOrderService(orderRepo, cache)
 	orderHandler := handlers.NewOrderHandler(orderSrv)
 
-	paymentSrv := mercadopago.NewPaymentService(orderRepo, httpClient, config.HTTP.Domain, config.PaymentProvider.MercadoPago.AccessToken)
+	paymentSrv := mercadopago.NewPaymentService(
+		orderRepo,
+		prodRepo,
+		userRepo,
+		httpClient,
+		config.HTTP.Domain,
+		config.PaymentProvider.MercadoPago.AccessToken,
+	)
 	paymentHandler := handlers.NewPaymentHandler(paymentSrv)
 
 	// root router

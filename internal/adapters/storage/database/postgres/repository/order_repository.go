@@ -64,7 +64,7 @@ func (or *OrderRepo) SaveOrder(ctx context.Context, order *domain.Order) (*domai
 
 // GetOrderById implements ports.OrderRepository.
 func (or *OrderRepo) GetOrderById(ctx context.Context, id uuid.UUID) (*domain.Order, error) {
-	var orderDb *models.OrderModel
+	var orderDb = &models.OrderModel{}
 
 	if result := or.db.WithContext(ctx).Preload("Items").First(orderDb, "id = ?", id); result.Error != nil {
 		if result.RowsAffected == 0 {

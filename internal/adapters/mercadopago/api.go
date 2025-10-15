@@ -9,6 +9,7 @@ import (
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,14 +19,23 @@ import (
 
 type PaymentService struct {
 	httpClient  *http.Client
-	repo        ports.OrderRepository
+	userRepo    ports.UserRepository
+	orderRepo   ports.OrderRepository
+	productRepo ports.ProductRepository
 	domain      string
 	secretToken string
 }
 
-func NewPaymentService(repo ports.OrderRepository, client *http.Client, domain, secretToken string) ports.PaymentProvider {
+func NewPaymentService(
+	orderRepo ports.OrderRepository,
+	productRepo ports.ProductRepository,
+	userRepo ports.UserRepository,
+	client *http.Client, domain,
+	secretToken string) ports.PaymentProvider {
 	return &PaymentService{
-		repo:        repo,
+		userRepo:    userRepo,
+		orderRepo:   orderRepo,
+		productRepo: productRepo,
 		httpClient:  client,
 		domain:      domain,
 		secretToken: secretToken,
@@ -33,18 +43,23 @@ func NewPaymentService(repo ports.OrderRepository, client *http.Client, domain, 
 }
 
 // Helpers funcs
-func generatePreference(order *domain.Order, domain string) MpPreferenceRequest {
-	items := make([]MpItem, len(order.Items))
+func (ps *PaymentService) generatePreference(order *domain.Order, user *domain.User, domain string) (*MpPreferenceRequest, error) {
+	items := make([]MpItem, 0)
 
 	for _, orderItem := range order.Items {
+		product, err := ps.productRepo.GetProductById(context.Background(), orderItem.ProductID)
+		if err != nil {
+			return nil, err
+		}
+
 		items = append(items, MpItem{
 			ID:          orderItem.ProductID.String(),
-			Title:       orderItem.Product.Name,
-			Description: orderItem.Product.SKU,
-			CategoryID:  orderItem.Product.Category.Name,
-			CurrencyID:  string(orderItem.Order.Currency),
+			Title:       product.Name,
+			Description: product.SKU,
+			CategoryID:  fmt.Sprint(product.CategoryID),
+			CurrencyID:  fmt.Sprint(order.Currency),
 			Quantity:    int(orderItem.Quantity),
-			UnitPrice:   orderItem.Product.Price,
+			UnitPrice:   product.Price,
 		})
 	}
 
@@ -54,14 +69,17 @@ func generatePreference(order *domain.Order, domain string) MpPreferenceRequest 
 		ExternalReference:   order.ID.String(),
 		NotificationURL:     fmt.Sprintf("%s/payment/mp/webhook", domain),
 		BackUrls: MpBackUrls{
-			Success: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
-			Failure: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
-			Pending: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
+			Success: fmt.Sprintf("%s/order", domain),
+			// Success: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
+			Failure: fmt.Sprintf("%s/order", domain),
+			// Failure: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
+			Pending: fmt.Sprintf("%s/order", domain),
+			// Pending: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
 		},
 		Items: items,
 		Payer: MpPayer{
-			Name:  order.User.Name,
-			Email: order.User.Email,
+			Name:  user.Name,
+			Email: user.Email,
 		},
 		PaymentMethods: PaymentMethods{
 			Installments: 6,
@@ -77,7 +95,7 @@ func generatePreference(order *domain.Order, domain string) MpPreferenceRequest 
 		},
 	}
 
-	return preference
+	return &preference, nil
 }
 
 func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) error {
@@ -114,7 +132,7 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 	}
 
 	// obtain order to update
-	order, err := ps.repo.GetOrderById(ctx, parsedID)
+	order, err := ps.orderRepo.GetOrderById(ctx, parsedID)
 	if err != nil {
 		return err
 	}
@@ -169,7 +187,7 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 		return err
 	}
 
-	_, err = ps.repo.SaveOrder(ctx, order)
+	_, err = ps.orderRepo.SaveOrder(ctx, order)
 	return err
 }
 
@@ -222,27 +240,45 @@ func (ps *PaymentService) handleMerchantOrder(ctx context.Context, orderId strin
 // CreatePayment implements ports.PaymentProvider.
 func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) (*string, error) {
 
-	order, err := ps.repo.GetOrderById(ctx, orderId)
+	order, err := ps.orderRepo.GetOrderById(ctx, orderId)
 	if err != nil {
 		return nil, err
 	}
 
-	preference := generatePreference(order, ps.domain)
+	user, err := ps.userRepo.GetUserByID(ctx, order.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	preference, err := ps.generatePreference(order, user, ps.domain)
+	if err != nil {
+		return nil, err
+	}
+
+	apiUrl := "https://api.mercadopago.com/checkout/preferences"
 
 	jsonBody, _ := json.Marshal(preference)
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.com/checkout/preferences", bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", apiUrl, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ps.secretToken))
+	// Error MercadoPago (400): {"message":"quantity invalid","error":"invalid_items","status":400,"cause":null}
 
 	res, err := ps.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		bodyBytes, _ := io.ReadAll(res.Body)
+		fmt.Printf("Error MercadoPago (%d): %s\n", res.StatusCode, string(bodyBytes))
+		slog.Error("Error in mercado pago response", "error", string(bodyBytes), "code", res.StatusCode)
+		return nil, fmt.Errorf("bad request to MercadoPago")
+	}
 
 	var result struct {
 		InitPoint string `json:"init_point"`
