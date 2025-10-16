@@ -43,7 +43,7 @@ func NewPaymentService(
 }
 
 // Helpers funcs
-func (ps *PaymentService) generatePreference(order *domain.Order, user *domain.User, domain string) (*MpPreferenceRequest, error) {
+func (ps *PaymentService) generatePreference(ctx context.Context, order *domain.Order, user *domain.User, domain string) (*MpPreferenceRequest, error) {
 	items := make([]MpItem, 0)
 
 	for _, orderItem := range order.Items {
@@ -171,10 +171,10 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 		PaymentID:         fmt.Sprint(payment.ID),
 		PayMethod:         payment.PayMethod.ID,
 		PayResource:       payment.PayMethod.Type,
-		Installments:      &payment.Installments,
+		Installments:      payment.Installments,
 		ExternalReference: payment.ExternalReference,
-		NetReceivedAmount: &payment.TransactionDetails.NetReceivedAmount,
-		Fee:               &fee,
+		NetReceivedAmount: payment.TransactionDetails.NetReceivedAmount,
+		Fee:               fee,
 		PaidAt:            &paidAt,
 		Paid:              isPaid,
 	}
@@ -247,7 +247,7 @@ func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) 
 		return nil, err
 	}
 
-	preference, err := ps.generatePreference(order, user, ps.domain)
+	preference, err := ps.generatePreference(ctx, order, user, ps.domain)
 	if err != nil {
 		return nil, err
 	}

@@ -90,8 +90,8 @@ func main() {
 	opSrv := services.NewOrderProductService(opRepo)
 
 	// orders
-	orderRepo := repository.NewOrderRepo(cartSrv, opSrv, db)
-	orderSrv := services.NewOrderService(orderRepo, cache)
+	orderRepo := repository.NewOrderRepo(opSrv, db)
+	orderSrv := services.NewOrderService(orderRepo, cartSrv, cache)
 	orderHandler := handlers.NewOrderHandler(orderSrv)
 
 	paymentSrv := mercadopago.NewPaymentService(
