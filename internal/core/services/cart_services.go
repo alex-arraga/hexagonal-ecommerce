@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	cachekeys "go-ecommerce/internal/adapters/storage/cache/cache_keys"
 	cachettl "go-ecommerce/internal/adapters/storage/cache/cache_ttl"
 	"go-ecommerce/internal/core/domain"
@@ -13,6 +14,7 @@ import (
 )
 
 type CartService struct {
+	ps    ports.ProductService
 	cache ports.CacheRepository
 }
 
@@ -79,6 +81,40 @@ func (c *CartService) AddItemToCart(ctx context.Context, userId, productId uuid.
 func (c *CartService) GetCart(ctx context.Context, userId uuid.UUID) (*domain.Cart, error) {
 	cart := c.loadCart(ctx, userId)
 	return cart, nil
+}
+
+// RemoveItem implements ports.CartService.
+func (c *CartService) CalcItemsAmount(ctx context.Context, userId uuid.UUID) (*ports.Amount, error) {
+	cart, err := c.GetCart(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	var subTotal float64 = 0
+	var discount float64 = 0
+	var total float64 = 0
+
+	if len(cart.Items) <= 0 {
+		return nil, fmt.Errorf("items not found in cart")
+	}
+
+	for _, item := range cart.Items {
+		prod, err := c.ps.GetProductById(ctx, item.ProductID)
+		if err != nil {
+			return nil, err
+		}
+		subTotal += prod.Price * float64(item.Quantity)
+		discount += prod.Disscount * float64(item.Quantity)
+		total = subTotal - discount
+	}
+
+	amount := &ports.Amount{
+		SubTotal: subTotal,
+		Discount: discount,
+		Total:    total,
+	}
+
+	return amount, nil
 }
 
 // RemoveItem implements ports.CartService.
