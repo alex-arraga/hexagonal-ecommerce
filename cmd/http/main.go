@@ -82,7 +82,7 @@ func main() {
 	prodHandler := handlers.NewProductHandler(prodSrv)
 
 	// cart
-	cartSrv := services.NewCartService(cache)
+	cartSrv := services.NewCartService(cache, prodSrv)
 	cartHandler := handlers.NewCartHandler(cartSrv)
 
 	// order-products
@@ -91,7 +91,7 @@ func main() {
 
 	// orders
 	orderRepo := repository.NewOrderRepo(opSrv, db)
-	orderSrv := services.NewOrderService(orderRepo, cartSrv, cache)
+	orderSrv := services.NewOrderService(orderRepo, opSrv, cartSrv, cache)
 	orderHandler := handlers.NewOrderHandler(orderSrv)
 
 	paymentSrv := mercadopago.NewPaymentService(

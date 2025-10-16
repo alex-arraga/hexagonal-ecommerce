@@ -18,8 +18,8 @@ type CartService struct {
 	cache ports.CacheRepository
 }
 
-func NewCartService(cache ports.CacheRepository) ports.CartService {
-	return &CartService{cache: cache}
+func NewCartService(cache ports.CacheRepository, ps ports.ProductService) ports.CartService {
+	return &CartService{cache: cache, ps: ps}
 }
 
 // helper func
@@ -83,7 +83,7 @@ func (c *CartService) GetCart(ctx context.Context, userId uuid.UUID) (*domain.Ca
 	return cart, nil
 }
 
-// RemoveItem implements ports.CartService.
+// CalcItemsAmount implements ports.CartService.
 func (c *CartService) CalcItemsAmount(ctx context.Context, userId uuid.UUID) (*ports.Amount, error) {
 	cart, err := c.GetCart(ctx, userId)
 	if err != nil {

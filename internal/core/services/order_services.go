@@ -14,13 +14,15 @@ import (
 
 type OrderService struct {
 	orderRepo ports.OrderRepository
+	ops       ports.OrderProductService
 	cart      ports.CartService
 	cache     ports.CacheRepository
 }
 
-func NewOrderService(repo ports.OrderRepository, cart ports.CartService, cache ports.CacheRepository) ports.OrderService {
+func NewOrderService(orderRepo ports.OrderRepository, ops ports.OrderProductService, cart ports.CartService, cache ports.CacheRepository) ports.OrderService {
 	return &OrderService{
-		orderRepo: repo,
+		orderRepo: orderRepo,
+		ops:       ops,
 		cart:      cart,
 		cache:     cache,
 	}
@@ -30,6 +32,13 @@ func NewOrderService(repo ports.OrderRepository, cart ports.CartService, cache p
 func (os *OrderService) SaveOrder(ctx context.Context, inputs ports.SaveOrderInputs) (*domain.Order, error) {
 	var order *domain.Order
 
+	// get all items from order
+	cart, err := os.cart.GetCart(ctx, inputs.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	// get amount of all items
 	amount, err := os.cart.CalcItemsAmount(ctx, inputs.UserID)
 	if err != nil {
 		return nil, err
@@ -68,6 +77,22 @@ func (os *OrderService) SaveOrder(ctx context.Context, inputs ports.SaveOrderInp
 	result, err := os.orderRepo.SaveOrder(ctx, order)
 	if err != nil {
 		return nil, err
+	}
+
+	// if a order was created, creates order-product for each item of cart
+	if inputs.ID == uuid.Nil {
+		for _, item := range cart.Items {
+			_, err := os.ops.AddProductToOrder(ctx, result.ID, item.ProductID, item.Quantity)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// if all is ok, clean cart
+		err := os.cart.Clear(ctx, inputs.UserID)
+		if err != nil {
+			slog.Error("error cleaning cart", "UserID", inputs.UserID, "error", err)
+		}
 	}
 
 	// create new order cache key and serialize order created or udpated
