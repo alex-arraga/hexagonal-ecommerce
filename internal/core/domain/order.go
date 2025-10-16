@@ -8,7 +8,6 @@ import (
 
 type Providers string
 type Currencies string
-type DisscountTypes string
 type PayStatus string
 type PayStatusDetail string
 
@@ -19,12 +18,6 @@ const (
 const (
 	ARS Currencies = "ARS"
 	USD Currencies = "USD"
-)
-
-const (
-	Percentage DisscountTypes = "percentage" // Percentage = subtotal * (15 / 100)
-	Bundle     DisscountTypes = "bundle"     // Bundle = 2x1, 3x2, Pack of 3 services $X
-	Fixed      DisscountTypes = "fixed"      // Fixed = $500
 )
 
 const (
@@ -67,8 +60,7 @@ type Order struct {
 	PayMethod         *string
 	PayResource       *string
 	SubTotal          float64
-	Disscount         *float64
-	DisscountType     *DisscountTypes
+	Discount          float64
 	Total             float64
 	Paid              bool
 	PayStatus         PayStatus
@@ -84,11 +76,12 @@ type Order struct {
 }
 
 type NewOrderInputs struct {
-	UserID         uuid.UUID
-	Currency       Currencies
-	SubTotal       float64
-	Disscount      *float64
-	DisscountTypes *DisscountTypes
+	UserID        uuid.UUID
+	Currency      Currencies
+	SubTotal      float64
+	Discount      float64
+	DiscountTypes *DisscountTypes
+	Total         float64
 }
 
 func NewOrder(inputs NewOrderInputs) (*Order, error) {
@@ -99,17 +92,16 @@ func NewOrder(inputs NewOrderInputs) (*Order, error) {
 		ID:                uuid.Nil, // repository will asign the id
 		UserID:            inputs.UserID,
 		Currency:          inputs.Currency,
-		PayStatus:         Pending,
 		Providers:         MercadoPago,
 		ExternalReference: nil,
 		SecureToken:       uuid.Nil,
 		PaymentID:         nil,
+		PayStatus:         Pending,
 		PayStatusDetail:   nil,
 		Paid:              false,
 		SubTotal:          inputs.SubTotal,
-		Disscount:         inputs.Disscount,
-		DisscountType:     inputs.DisscountTypes,
-		Total:             inputs.SubTotal - *inputs.Disscount,
+		Discount:          inputs.Discount,
+		Total:             inputs.Total,
 		CreatedAt:         now,
 		UpdatedAt:         now,
 		ExpiresAt:         &expireInTreeDays, // the order is created with 3 days to pay it
@@ -122,10 +114,10 @@ type UpdateOrderInputs struct {
 	PayStatusDetail   PayStatusDetail
 	PayMethod         *string
 	PayResource       *string
-	Installments      *uint8
+	Installments      uint8
 	Paid              bool
-	Fee               *float64
-	NetReceivedAmount *float64
+	Fee               float64
+	NetReceivedAmount float64
 	ExternalReference string
 	PaidAt            *time.Time
 }

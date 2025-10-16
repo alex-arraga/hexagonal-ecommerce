@@ -22,18 +22,13 @@ func NewOrderHandler(orderService ports.OrderService) *OrderHandler {
 
 func (oh *OrderHandler) SaveOrder(r *http.Request, w http.ResponseWriter) {
 	type parameters struct {
-		Provider          domain.Providers        `json:"provider"`
 		UserID            uuid.UUID               `json:"user_id"`
 		PaymentID         *string                 `json:"payment_id,omitempty"`
-		SecureToken       *uuid.UUID              `json:"secure_token,omitempty"`
+		Provider          domain.Providers        `json:"provider"`
 		ExternalReference *string                 `json:"external_reference,omitempty"`
 		Currency          domain.Currencies       `json:"currency"`
-		SubTotal          float64                 `json:"sub_total"`
-		Disscount         *float64                `json:"disscount,omitempty"`
-		DisscountType     *domain.DisscountTypes  `json:"disscount_type,omitempty"`
-		Total             float64                 `json:"total"`
 		Paid              bool                    `json:"paid"`
-		PayStatus         domain.PayStatus        `json:"pay_status"`
+		PayStatus         *domain.PayStatus       `json:"pay_status"`
 		PayStatusDetail   *domain.PayStatusDetail `json:"pay_status_detail,omitempty"`
 	}
 
@@ -74,19 +69,11 @@ func (oh *OrderHandler) SaveOrder(r *http.Request, w http.ResponseWriter) {
 		httpdtos.RespondError(w, http.StatusBadRequest, "Currency is required")
 		return
 	}
-	if params.SubTotal <= 0 {
-		httpdtos.RespondError(w, http.StatusBadRequest, "SubTotal must be greater than zero")
+	if params.PayStatus != nil && *params.PayStatus == "" {
+		httpdtos.RespondError(w, http.StatusBadRequest, "PayStatus is required")
 		return
 	}
-	if params.Disscount != nil && *params.Disscount < 0 {
-		httpdtos.RespondError(w, http.StatusBadRequest, "Disscount must be greater than or equal to zero")
-		return
-	}
-	if params.Total <= 0 {
-		httpdtos.RespondError(w, http.StatusBadRequest, "Total must be greater than zero")
-		return
-	}
-	if params.PayStatus == "" {
+	if params.PayStatusDetail != nil && *params.PayStatus == "" {
 		httpdtos.RespondError(w, http.StatusBadRequest, "PayStatus is required")
 		return
 	}
@@ -97,9 +84,6 @@ func (oh *OrderHandler) SaveOrder(r *http.Request, w http.ResponseWriter) {
 		PaymentID:         params.PaymentID,
 		ExternalReference: params.ExternalReference,
 		Currency:          params.Currency,
-		SubTotal:          params.SubTotal,
-		Disscount:         params.Disscount,
-		DisscountTypes:    params.DisscountType,
 		PayStatus:         params.PayStatus,
 		PayStatusDetail:   params.PayStatusDetail,
 	}

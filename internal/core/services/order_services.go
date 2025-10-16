@@ -13,14 +13,16 @@ import (
 )
 
 type OrderService struct {
-	repo  ports.OrderRepository
-	cache ports.CacheRepository
+	orderRepo ports.OrderRepository
+	cart      ports.CartService
+	cache     ports.CacheRepository
 }
 
-func NewOrderService(repo ports.OrderRepository, cache ports.CacheRepository) ports.OrderService {
+func NewOrderService(repo ports.OrderRepository, cart ports.CartService, cache ports.CacheRepository) ports.OrderService {
 	return &OrderService{
-		repo:  repo,
-		cache: cache,
+		orderRepo: repo,
+		cart:      cart,
+		cache:     cache,
 	}
 }
 
@@ -28,14 +30,19 @@ func NewOrderService(repo ports.OrderRepository, cache ports.CacheRepository) po
 func (os *OrderService) SaveOrder(ctx context.Context, inputs ports.SaveOrderInputs) (*domain.Order, error) {
 	var order *domain.Order
 
+	amount, err := os.cart.CalcItemsAmount(ctx, inputs.UserID)
+	if err != nil {
+		return nil, err
+	}
+
 	if inputs.ID == uuid.Nil {
 		// create a new order if inputs.ID doesn't exist
 		newOrderInputs := domain.NewOrderInputs{
-			UserID:         inputs.UserID,
-			Currency:       inputs.Currency,
-			SubTotal:       inputs.SubTotal,
-			Disscount:      inputs.Disscount,
-			DisscountTypes: inputs.DisscountTypes,
+			UserID:   inputs.UserID,
+			Currency: inputs.Currency,
+			SubTotal: amount.SubTotal,
+			Discount: amount.Discount,
+			Total:    amount.Total,
 		}
 		newOrder, err := domain.NewOrder(newOrderInputs)
 		if err != nil {
@@ -44,7 +51,7 @@ func (os *OrderService) SaveOrder(ctx context.Context, inputs ports.SaveOrderInp
 		order = newOrder
 
 	} else {
-		existingOrder, err := os.repo.GetOrderById(ctx, inputs.ID)
+		existingOrder, err := os.orderRepo.GetOrderById(ctx, inputs.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -52,13 +59,13 @@ func (os *OrderService) SaveOrder(ctx context.Context, inputs ports.SaveOrderInp
 		existingOrder.UpdateOrder(domain.UpdateOrderInputs{
 			ExternalReference: *inputs.ExternalReference,
 			PaymentID:         *inputs.PaymentID,
-			PayStatus:         domain.PayStatus(inputs.PayStatus),
+			PayStatus:         domain.PayStatus(*inputs.PayStatus),
 			PayStatusDetail:   *inputs.PayStatusDetail,
 		})
 		order = existingOrder
 	}
 
-	result, err := os.repo.SaveOrder(ctx, order)
+	result, err := os.orderRepo.SaveOrder(ctx, order)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +106,7 @@ func (os *OrderService) GetOrderById(ctx context.Context, id uuid.UUID) (*domain
 	}
 
 	// else find order in repository
-	p, err := os.repo.GetOrderById(ctx, id)
+	p, err := os.orderRepo.GetOrderById(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +126,7 @@ func (os *OrderService) ListOrders(ctx context.Context) ([]*domain.Order, error)
 	}
 
 	// find orders in repository
-	orders, err := os.repo.ListOrders(ctx)
+	orders, err := os.orderRepo.ListOrders(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -18,12 +18,9 @@ type SaveOrderInputs struct {
 	ID                uuid.UUID
 	UserID            uuid.UUID
 	Currency          domain.Currencies
-	SubTotal          float64
-	Disscount         *float64
-	DisscountTypes    *domain.DisscountTypes
 	ExternalReference *string
 	PaymentID         *string
-	PayStatus         domain.PayStatus
+	PayStatus         *domain.PayStatus
 	PayStatusDetail   *domain.PayStatusDetail
 }
 

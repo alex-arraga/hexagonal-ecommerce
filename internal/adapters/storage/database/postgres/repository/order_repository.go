@@ -12,26 +12,19 @@ import (
 )
 
 type OrderRepo struct {
-	cart ports.CartService
-	ops  ports.OrderProductService
-	db   *gorm.DB
+	ops ports.OrderProductService
+	db  *gorm.DB
 }
 
-func NewOrderRepo(cart ports.CartService, opr ports.OrderProductService, db *gorm.DB) ports.OrderRepository {
+func NewOrderRepo(opr ports.OrderProductService, db *gorm.DB) ports.OrderRepository {
 	return &OrderRepo{
-		cart: cart,
-		ops:  opr,
-		db:   db,
+		ops: opr,
+		db:  db,
 	}
 }
 
 // SaveOrder implements ports.OrderRepository.
 func (or *OrderRepo) SaveOrder(ctx context.Context, order *domain.Order) (*domain.Order, error) {
-	cart, err := or.cart.GetCart(ctx, order.UserID)
-	if err != nil {
-		return nil, err
-	}
-
 	orderDb := database_dtos.ConvertOrderDomainToModel(order)
 
 	// if exist order.ID update, else create new order
@@ -49,7 +42,7 @@ func (or *OrderRepo) SaveOrder(ctx context.Context, order *domain.Order) (*domai
 	}
 
 	// creates order-product for each item of cart
-	for _, item := range cart.Items {
+	for _, item := range orderDb.Items {
 		op, err := or.ops.AddProductToOrder(ctx, orderDb.ID, item.ProductID, item.Quantity)
 		if err != nil {
 			return nil, err
