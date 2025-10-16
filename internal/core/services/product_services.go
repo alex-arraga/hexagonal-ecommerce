@@ -95,7 +95,7 @@ func (ps *ProductService) GetProductById(ctx context.Context, id uuid.UUID) (*do
 	data, err := ps.cache.Get(ctx, cacheKey)
 	if err == nil && len(data) > 0 {
 		var product domain.Product
-		if decodeErr := json.Unmarshal(data, &product); decodeErr != nil {
+		if decodeErr := json.Unmarshal(data, &product); decodeErr == nil {
 			return &product, nil
 		}
 	}

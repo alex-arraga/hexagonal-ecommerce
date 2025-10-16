@@ -47,7 +47,7 @@ func (ps *PaymentService) generatePreference(ctx context.Context, order *domain.
 	items := make([]MpItem, 0)
 
 	for _, orderItem := range order.Items {
-		product, err := ps.productRepo.GetProductById(context.Background(), orderItem.ProductID)
+		product, err := ps.productRepo.GetProductById(ctx, orderItem.ProductID)
 		if err != nil {
 			return nil, err
 		}
