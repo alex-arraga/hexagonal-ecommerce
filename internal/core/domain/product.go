@@ -12,17 +12,27 @@ const (
 	minProductSKULength  = 3
 )
 
+type DisscountTypes string
+
+const (
+	Percentage DisscountTypes = "percentage" // Percentage = subtotal * (15 / 100)
+	Bundle     DisscountTypes = "bundle"     // Bundle = 2x1, 3x2, Pack of 3 services $X
+	Fixed      DisscountTypes = "fixed"      // Fixed = $500
+)
+
 type Product struct {
-	ID         uuid.UUID
-	CategoryID uint64
-	SKU        string
-	Name       string
-	Stock      int64
-	Price      float64
-	Image      string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Category   *Category
+	ID            uuid.UUID
+	CategoryID    uint64
+	SKU           string
+	Name          string
+	Stock         int64
+	Price         float64
+	Disscount     float64
+	DisscountType DisscountTypes
+	Image         string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	Category      *Category
 }
 
 func NewProduct(name, sku, image string, stock int64, price float64, categoryID uint64) (*Product, error) {

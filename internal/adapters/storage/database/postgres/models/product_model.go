@@ -1,6 +1,7 @@
 package models
 
 import (
+	"go-ecommerce/internal/core/domain"
 	"time"
 
 	"github.com/google/uuid"
@@ -8,14 +9,16 @@ import (
 )
 
 type ProductModel struct {
-	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
-	Name      string    `gorm:"size:255;not null"`
-	SKU       string    `gorm:"size:255;not null"`
-	Stock     int64     `gorm:"not null"`
-	Price     float64   `gorm:"not null"`
-	Image     string    `gorm:"size:255;not null"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	ID           uuid.UUID              `gorm:"type:uuid;primaryKey"`
+	Name         string                 `gorm:"size:255;not null"`
+	SKU          string                 `gorm:"size:255;not null"`
+	Stock        int64                  `gorm:"not null"`
+	Price        float64                `gorm:"not null"`
+	Discount     float64                `gorm:"type:numeric"`
+	DiscountType *domain.DisscountTypes `gorm:"type:varchar(50)"`
+	Image        string                 `gorm:"size:255;not null"`
+	CreatedAt    time.Time              `gorm:"autoCreateTime"`
+	UpdatedAt    time.Time              `gorm:"autoUpdateTime"`
 
 	CategoryID uint64         `gorm:"not null"`
 	Category   *CategoryModel `gorm:"foreignKey:CategoryID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
