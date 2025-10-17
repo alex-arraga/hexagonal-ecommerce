@@ -31,11 +31,17 @@ func ConvertOrderDomainToModel(o *domain.Order) *models.OrderModel {
 		Discount:          o.Discount,
 		Total:             o.Total,
 		Paid:              o.Paid,
+		Fee:               *o.Fee,
+		Installments:      *o.Installments,
+		PayMethod:         o.PayMethod,
+		PayResource:       o.PayResource,
+		NetReceivedAmount: *o.NetReceivedAmount,
 		PayStatus:         o.PayStatus,
 		PayStatusDetail:   o.PayStatusDetail,
 		CreatedAt:         o.CreatedAt,
 		UpdatedAt:         o.UpdatedAt,
-		ExpiresAt:         *o.ExpiresAt,
+		ExpiresAt:         o.ExpiresAt,
+		PaidAt:            o.PaidAt,
 		Items:             items,
 	}
 }
@@ -72,11 +78,17 @@ func ConvertOrdersDomainToModels(orders []*domain.Order) []*models.OrderModel {
 			Discount:          o.Discount,
 			Total:             o.Total,
 			Paid:              o.Paid,
+			Fee:               *o.Fee,
+			Installments:      *o.Installments,
+			PayMethod:         o.PayMethod,
+			PayResource:       o.PayResource,
+			NetReceivedAmount: *o.NetReceivedAmount,
 			PayStatus:         o.PayStatus,
 			PayStatusDetail:   o.PayStatusDetail,
 			CreatedAt:         o.CreatedAt,
 			UpdatedAt:         o.UpdatedAt,
-			ExpiresAt:         *o.ExpiresAt,
+			ExpiresAt:         o.ExpiresAt,
+			PaidAt:            o.PaidAt,
 			Items:             items,
 		})
 	}
@@ -110,11 +122,17 @@ func ConvertOrderModelToDomain(o *models.OrderModel) *domain.Order {
 		Discount:          o.Discount,
 		Total:             o.Total,
 		Paid:              o.Paid,
+		Fee:               &o.Fee,
+		Installments:      &o.Installments,
+		PayMethod:         o.PayMethod,
+		PayResource:       o.PayResource,
+		NetReceivedAmount: &o.NetReceivedAmount,
 		PayStatus:         o.PayStatus,
 		PayStatusDetail:   o.PayStatusDetail,
 		CreatedAt:         o.CreatedAt,
 		UpdatedAt:         o.UpdatedAt,
-		ExpiresAt:         &o.ExpiresAt,
+		ExpiresAt:         o.ExpiresAt,
+		PaidAt:            o.PaidAt,
 		Items:             items,
 	}
 }
@@ -122,9 +140,10 @@ func ConvertOrderModelToDomain(o *models.OrderModel) *domain.Order {
 // DB models -> domain.Orders
 func ConvertOrdersModelsToDomain(orders []*models.OrderModel) []*domain.Order {
 	var ordersDomain []*domain.Order
+	items := make([]domain.OrderProduct, 0)
 
 	for _, orders := range orders {
-		items := make([]domain.OrderProduct, len(orders.Items))
+		items = make([]domain.OrderProduct, len(orders.Items))
 		for i, item := range orders.Items {
 			items[i] = domain.OrderProduct{
 				ID:        item.ID,
@@ -150,11 +169,18 @@ func ConvertOrdersModelsToDomain(orders []*models.OrderModel) []*domain.Order {
 			Discount:          o.Discount,
 			Total:             o.Total,
 			Paid:              o.Paid,
+			Fee:               &o.Fee,
+			Installments:      &o.Installments,
+			PayMethod:         o.PayMethod,
+			PayResource:       o.PayResource,
+			NetReceivedAmount: &o.NetReceivedAmount,
 			PayStatus:         o.PayStatus,
 			PayStatusDetail:   o.PayStatusDetail,
 			CreatedAt:         o.CreatedAt,
 			UpdatedAt:         o.UpdatedAt,
-			ExpiresAt:         &o.ExpiresAt,
+			ExpiresAt:         o.ExpiresAt,
+			PaidAt:            o.PaidAt,
+			Items:             items,
 		})
 	}
 

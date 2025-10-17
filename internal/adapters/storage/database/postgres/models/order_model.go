@@ -29,7 +29,7 @@ type OrderModel struct {
 	PayStatusDetail   *domain.PayStatusDetail `gorm:"type:varchar(100)"`
 	CreatedAt         time.Time               `gorm:"autoCreateTime"`
 	UpdatedAt         time.Time               `gorm:"autoUpdateTime"`
-	ExpiresAt         time.Time               `gorm:"type:timestamp"`
+	ExpiresAt         *time.Time              `gorm:"type:timestamp"`
 	PaidAt            *time.Time              `gorm:"type:timestamp"`
 
 	// Relations

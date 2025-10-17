@@ -77,6 +77,10 @@ func (ps *PaymentService) generatePreference(ctx context.Context, order *domain.
 		Payer: MpPayer{
 			Name:  user.Name,
 			Email: user.Email,
+			Phone: Phone{
+				AreaCode: "+54",
+				Number:   "123456",
+			},
 		},
 		PaymentMethods: PaymentMethods{
 			Installments: 6,
@@ -104,7 +108,7 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 	}
 
 	// set headers and fetching request
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer: %s", ps.secretToken))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ps.secretToken))
 
 	resp, err := ps.httpClient.Do(req)
 	if err != nil {
@@ -112,16 +116,17 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 	}
 	defer resp.Body.Close()
 
-	// TODO: eliminar esto, solo para ver el objeto
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	fmt.Print(bodyBytes)
-
 	// transform body in payment object
 	payment := &MpSimplifiedPayment{}
-	json.NewDecoder(resp.Body).Decode(payment)
+	err = json.NewDecoder(resp.Body).Decode(payment)
+	if err != nil {
+		return fmt.Errorf("failed decoding payment: %w", err)
+
+	}
+
+	if payment.ExternalReference == "" {
+		return fmt.Errorf("external_reference missing in payment")
+	}
 
 	parsedID, err := uuid.Parse(payment.ExternalReference)
 	if err != nil {
@@ -185,6 +190,9 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 	}
 
 	_, err = ps.orderRepo.SaveOrder(ctx, order)
+	if err != nil {
+		slog.Error("error updating order in repository", "error", err, "order_id", order.ID)
+	}
 	return err
 }
 
@@ -205,15 +213,11 @@ func (ps *PaymentService) handleMerchantOrder(ctx context.Context, orderId strin
 	}
 	defer resp.Body.Close()
 
-	// TODO: eliminar solo para ver el body
-	jsonBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	fmt.Print(jsonBytes)
-
 	merchantOrder := &MpSimplifiedMerchantOrder{}
-	json.NewDecoder(resp.Body).Decode(merchantOrder)
+	err = json.NewDecoder(resp.Body).Decode(&merchantOrder)
+	if err != nil {
+		return fmt.Errorf("failed decoding merchant order: %w", err)
+	}
 
 	// seach and find approved payments inside merchant order, if exist call handlePayment, else return an error
 	found := false
@@ -221,7 +225,9 @@ func (ps *PaymentService) handleMerchantOrder(ctx context.Context, orderId strin
 	for _, payment := range merchantOrder.Payments {
 		if payment.Status == domain.Approved && payment.StatusDetail == domain.Accredited {
 			strPaymentId := fmt.Sprint(payment.ID)
-			ps.handlePayment(ctx, strPaymentId)
+			if err := ps.handlePayment(ctx, strPaymentId); err != nil {
+				slog.Error("handlePayment failed", "err", err)
+			}
 			found = true
 			break
 		}
@@ -279,7 +285,11 @@ func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) 
 		InitPoint string `json:"init_point"`
 	}
 
-	json.NewDecoder(res.Body).Decode(&result)
+	err = json.NewDecoder(res.Body).Decode(&result)
+	if err != nil {
+		return nil, fmt.Errorf("failed decoding result: %w", err)
+	}
+
 	return &result.InitPoint, nil
 }
 

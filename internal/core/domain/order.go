@@ -123,11 +123,21 @@ type UpdateOrderInputs struct {
 }
 
 func (o *Order) UpdateOrder(inputs UpdateOrderInputs) error {
+	// todo -> migrar logica de negocio desde api a domain
+	o.PayStatus = inputs.PayStatus
+	o.PayStatusDetail = &inputs.PayStatusDetail
+	o.PayMethod = inputs.PayMethod
+	o.PayResource = inputs.PayResource
+	o.Paid = inputs.Paid
+	o.PaidAt = inputs.PaidAt
+
 	o.ExternalReference = &inputs.ExternalReference
 	o.PaymentID = &inputs.PaymentID
 
-	o.PayStatus = inputs.PayStatus
-	o.PayStatusDetail = &inputs.PayStatusDetail
+	o.Fee = &inputs.Fee
+	o.NetReceivedAmount = &inputs.NetReceivedAmount
+	o.Installments = &inputs.Installments
+
 	o.UpdatedAt = time.Now()
 
 	if o.PayStatus == Approved {
