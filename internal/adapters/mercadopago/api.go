@@ -139,6 +139,11 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 		return err
 	}
 
+	// if order has been updated, return
+	if order.PaymentID != nil {
+		return nil
+	}
+
 	// validations and handling errors
 	// external_reference must be equal than order id
 	if payment.ExternalReference != order.ID.String() {
@@ -226,7 +231,7 @@ func (ps *PaymentService) handleMerchantOrder(ctx context.Context, orderId strin
 		if payment.Status == domain.Approved && payment.StatusDetail == domain.Accredited {
 			strPaymentId := fmt.Sprint(payment.ID)
 			if err := ps.handlePayment(ctx, strPaymentId); err != nil {
-				slog.Error("handlePayment failed", "err", err)
+				slog.Error("error processing mercado pago payment", "error", err)
 			}
 			found = true
 			break
