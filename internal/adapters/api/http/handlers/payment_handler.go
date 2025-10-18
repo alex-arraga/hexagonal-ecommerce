@@ -11,10 +11,10 @@ import (
 )
 
 type PaymentHandler struct {
-	srv ports.PaymentProvider
+	srv ports.PaymentService
 }
 
-func NewPaymentHandler(paymentService ports.PaymentProvider) *PaymentHandler {
+func NewPaymentHandler(paymentService ports.PaymentService) *PaymentHandler {
 	return &PaymentHandler{srv: paymentService}
 }
 
@@ -43,7 +43,7 @@ func (ph *PaymentHandler) StartTransaction(r *http.Request, w http.ResponseWrite
 	}
 
 	// If operations it's ok, return a redirect_url to can pay
-	redirectUrl, err := ph.srv.CreatePayment(r.Context(), uuid)
+	redirectUrl, err := ph.srv.StartPayment(r.Context(), uuid)
 	if err != nil {
 		httpdtos.RespondError(w, http.StatusBadRequest, fmt.Sprintf("Error processing payment request: %s", err))
 		return

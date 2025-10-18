@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go-ecommerce/internal/adapters/mercadopago/mp_dtos"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
 	"io"
@@ -13,29 +14,16 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/google/uuid"
 )
 
-type PaymentService struct {
+type PaymentProvider struct {
 	httpClient  *http.Client
-	userRepo    ports.UserRepository
-	orderRepo   ports.OrderRepository
-	productRepo ports.ProductRepository
 	domain      string
 	secretToken string
 }
 
-func NewPaymentService(
-	orderRepo ports.OrderRepository,
-	productRepo ports.ProductRepository,
-	userRepo ports.UserRepository,
-	client *http.Client, domain,
-	secretToken string) ports.PaymentProvider {
-	return &PaymentService{
-		userRepo:    userRepo,
-		orderRepo:   orderRepo,
-		productRepo: productRepo,
+func NewPaymentProvider(client *http.Client, domain, secretToken string) ports.PaymentProvider {
+	return &PaymentProvider{
 		httpClient:  client,
 		domain:      domain,
 		secretToken: secretToken,
@@ -43,68 +31,49 @@ func NewPaymentService(
 }
 
 // Helpers funcs
-func (ps *PaymentService) generatePreference(ctx context.Context, order *domain.Order, user *domain.User, domain string) (*MpPreferenceRequest, error) {
-	items := make([]MpItem, 0)
-
-	for _, orderItem := range order.Items {
-		product, err := ps.productRepo.GetProductById(ctx, orderItem.ProductID)
-		if err != nil {
-			return nil, err
-		}
-
-		items = append(items, MpItem{
-			ID:          orderItem.ProductID.String(),
-			Title:       product.Name,
-			Description: product.SKU,
-			CategoryID:  fmt.Sprint(product.CategoryID),
-			CurrencyID:  fmt.Sprint(order.Currency),
-			Quantity:    int(orderItem.Quantity),
-			UnitPrice:   product.Price,
-		})
-	}
-
-	preference := MpPreferenceRequest{
+func (ps *PaymentProvider) GeneratePreference(ctx context.Context, order *domain.Order, items []mp_dtos.MpItem, user *domain.User) *mp_dtos.MpPreferenceRequest {
+	preference := mp_dtos.MpPreferenceRequest{
 		AutoReturn:          "approved",
 		StatementDescriptor: "Golang Ecommerce",
 		ExternalReference:   fmt.Sprint(order.ID),
-		NotificationURL:     fmt.Sprintf("%s/payment/mp/webhook", domain),
-		BackUrls: MpBackUrls{
-			Success: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
-			Failure: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
-			Pending: fmt.Sprintf("%s/order/%s", domain, order.SecureToken),
+		NotificationURL:     fmt.Sprintf("%s/payment/mp/webhook", ps.domain),
+		BackUrls: mp_dtos.MpBackUrls{
+			Success: fmt.Sprintf("%s/order/%s", ps.domain, order.SecureToken),
+			Failure: fmt.Sprintf("%s/order/%s", ps.domain, order.SecureToken),
+			Pending: fmt.Sprintf("%s/order/%s", ps.domain, order.SecureToken),
 		},
 		Items: items,
-		Payer: MpPayer{
+		Payer: mp_dtos.MpPayer{
 			Name:  user.Name,
 			Email: user.Email,
-			Phone: Phone{
+			Phone: mp_dtos.Phone{
 				AreaCode: "+54",
 				Number:   "123456",
 			},
 		},
-		PaymentMethods: PaymentMethods{
+		PaymentMethods: mp_dtos.PaymentMethods{
 			Installments: 6,
-			ExcludedPaymentTypes: []ExcludedType{
+			ExcludedPaymentTypes: []mp_dtos.ExcludedType{
 				{ID: "atm"},
 				{ID: "ticket"},
 				{ID: "bank_transfer"},
 			},
-			ExcludedPaymentMethods: []ExcludedMethod{
+			ExcludedPaymentMethods: []mp_dtos.ExcludedMethod{
 				{ID: "servipag"},
 				{ID: "sencillito"},
 			},
 		},
 	}
 
-	return &preference, nil
+	return &preference
 }
 
-func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) error {
+func (ps *PaymentProvider) handlePayment(ctx context.Context, order *domain.Order, paymentId string) (*domain.Order, error) {
 	// prepare request to call mp api
 	url := fmt.Sprintf("https://api.mercadopago.com/v1/payments/%s", paymentId)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set headers and fetching request
@@ -112,53 +81,42 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 
 	resp, err := ps.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	// transform body in payment object
-	payment := &MpSimplifiedPayment{}
+	payment := &mp_dtos.MpSimplifiedPayment{}
 	err = json.NewDecoder(resp.Body).Decode(payment)
 	if err != nil {
-		return fmt.Errorf("failed decoding payment: %w", err)
+		return nil, fmt.Errorf("failed decoding payment: %w", err)
 
 	}
 
 	if payment.ExternalReference == "" {
-		return fmt.Errorf("external_reference missing in payment")
-	}
-
-	parsedID, err := uuid.Parse(payment.ExternalReference)
-	if err != nil {
-		return err
-	}
-
-	// obtain order to update
-	order, err := ps.orderRepo.GetOrderById(ctx, parsedID)
-	if err != nil {
-		return err
+		return nil, fmt.Errorf("external_reference missing in payment")
 	}
 
 	// if order has been updated, return
 	if order.PaymentID != nil {
-		return nil
+		return nil, nil
 	}
 
 	// validations and handling errors
 	// external_reference must be equal than order id
 	if payment.ExternalReference != order.ID.String() {
-		return fmt.Errorf("payment: %s external_reference does not match with order: %s", payment.ExternalReference, order.ID)
+		return nil, fmt.Errorf("payment: %s external_reference does not match with order: %s", payment.ExternalReference, order.ID)
 	}
 
 	// avoids updating a order with an approved payment but that was never was credited due to account errors or holds
 	if payment.TransactionDetails.NetReceivedAmount <= 0 {
-		return fmt.Errorf("net received amount is 0 or less for payment: %v", payment.ID)
+		return nil, fmt.Errorf("net received amount is 0 or less for payment: %v", payment.ID)
 	}
 
 	// if the order has already been updated with this payment_id, return and do nothing
 	strPaymentId := strconv.Itoa(payment.ID)
 	if order.PaymentID == &strPaymentId {
-		return fmt.Errorf("payment: %v already processed for order: %s", payment.ID, order.ID)
+		return nil, fmt.Errorf("payment: %v already processed for order: %s", payment.ID, order.ID)
 	}
 
 	// update order with payment data
@@ -191,22 +149,18 @@ func (ps *PaymentService) handlePayment(ctx context.Context, paymentId string) e
 
 	err = order.UpdateOrder(dataToUpdate)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = ps.orderRepo.SaveOrder(ctx, order)
-	if err != nil {
-		slog.Error("error updating order in repository", "error", err, "order_id", order.ID)
-	}
-	return err
+	return order, nil
 }
 
-func (ps *PaymentService) handleMerchantOrder(ctx context.Context, orderId string) error {
+func (ps *PaymentProvider) handleMerchantOrder(ctx context.Context, order *domain.Order, merchantOrderId string) (*domain.Order, error) {
 	// prepare request to call mp api
-	url := fmt.Sprintf("https://api.mercadopago.com/merchant_orders/%s", orderId)
+	url := fmt.Sprintf("https://api.mercadopago.com/merchant_orders/%s", merchantOrderId)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set headers and fetching request
@@ -214,14 +168,14 @@ func (ps *PaymentService) handleMerchantOrder(ctx context.Context, orderId strin
 
 	resp, err := ps.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	merchantOrder := &MpSimplifiedMerchantOrder{}
+	merchantOrder := &mp_dtos.MpSimplifiedMerchantOrder{}
 	err = json.NewDecoder(resp.Body).Decode(&merchantOrder)
 	if err != nil {
-		return fmt.Errorf("failed decoding merchant order: %w", err)
+		return nil, fmt.Errorf("failed decoding merchant order: %w", err)
 	}
 
 	// seach and find approved payments inside merchant order, if exist call handlePayment, else return an error
@@ -230,39 +184,24 @@ func (ps *PaymentService) handleMerchantOrder(ctx context.Context, orderId strin
 	for _, payment := range merchantOrder.Payments {
 		if payment.Status == domain.Approved && payment.StatusDetail == domain.Accredited {
 			strPaymentId := fmt.Sprint(payment.ID)
-			if err := ps.handlePayment(ctx, strPaymentId); err != nil {
+			updatedOrder, err := ps.handlePayment(ctx, order, strPaymentId)
+			if err != nil {
 				slog.Error("error processing mercado pago payment", "error", err)
 			}
 			found = true
-			break
+			return updatedOrder, nil
 		}
 	}
 
 	if !found {
-		return fmt.Errorf("merchant order %s received, but no approved/accredited payment found", orderId)
+		return nil, fmt.Errorf("merchant order %s received, but no approved/accredited payment found", merchantOrderId)
 	}
 
-	return nil
+	return nil, nil
 }
 
 // CreatePayment implements ports.PaymentProvider.
-func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) (*string, error) {
-
-	order, err := ps.orderRepo.GetOrderById(ctx, orderId)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := ps.userRepo.GetUserByID(ctx, order.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	preference, err := ps.generatePreference(ctx, order, user, ps.domain)
-	if err != nil {
-		return nil, err
-	}
-
+func (ps *PaymentProvider) ProcessPayment(ctx context.Context, preference *mp_dtos.MpPreferenceRequest) (*string, error) {
 	apiUrl := "https://api.mercadopago.com/checkout/preferences"
 
 	jsonBody, _ := json.Marshal(preference)
@@ -299,18 +238,26 @@ func (ps *PaymentService) CreatePayment(ctx context.Context, orderId uuid.UUID) 
 }
 
 // VerifyPayment implements ports.PaymentProvider.
-func (ps *PaymentService) VerifyPayment(ctx context.Context, paymentId, topic *string) error {
-	if paymentId == nil && topic == nil {
-		return errors.New("parameters id or topic not found")
+func (ps *PaymentProvider) VerifyPayment(ctx context.Context, order *domain.Order, id, topic *string) (*domain.Order, error) {
+	if id == nil && topic == nil {
+		return nil, errors.New("parameters id or topic not found")
 	}
 
-	if paymentId != nil && *topic == "payment" {
-		return ps.handlePayment(ctx, *paymentId)
+	if id != nil && *topic == "payment" {
+		updatedOrder, err := ps.handlePayment(ctx, order, *id)
+		if err != nil {
+			return nil, err
+		}
+		return updatedOrder, nil
 	}
 
-	if paymentId != nil && *topic == "merchant_order" {
-		return ps.handleMerchantOrder(ctx, *paymentId)
+	if id != nil && *topic == "merchant_order" {
+		updatedOrder, err := ps.handleMerchantOrder(ctx, order, *id)
+		if err != nil {
+			return nil, err
+		}
+		return updatedOrder, nil
 	}
 
-	return nil
+	return nil, nil
 }

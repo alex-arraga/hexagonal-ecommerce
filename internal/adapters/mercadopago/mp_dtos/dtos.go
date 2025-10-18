@@ -1,4 +1,4 @@
-package mercadopago
+package mp_dtos
 
 import "go-ecommerce/internal/core/domain"
 
