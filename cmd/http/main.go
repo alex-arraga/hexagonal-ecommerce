@@ -113,7 +113,7 @@ func main() {
 
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins: config.HTTP.AllowedOrigins,
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		MaxAge:         300,
 	}))
