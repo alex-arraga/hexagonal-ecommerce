@@ -17,9 +17,9 @@ type OrderModel struct {
 	PaymentID         *string                 `gorm:"type:varchar(255)"`
 	PayMethod         *string                 `gorm:"type:varchar(50)"`
 	PayResource       *string                 `gorm:"type:varchar(50)"`
-	Installments      uint8                   `gorm:"type:numeric"`
-	NetReceivedAmount float64                 `gorm:"type:numeric"`
-	Fee               float64                 `gorm:"type:numeric"`
+	Installments      *uint8                  `gorm:"type:numeric"`
+	NetReceivedAmount *float64                `gorm:"type:numeric"`
+	Fee               *float64                `gorm:"type:numeric"`
 	Currency          domain.Currencies       `gorm:"type:varchar(10)"`
 	SubTotal          float64                 `gorm:"type:numeric"`
 	Discount          float64                 `gorm:"type:numeric"`
