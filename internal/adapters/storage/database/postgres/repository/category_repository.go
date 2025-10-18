@@ -57,7 +57,7 @@ func (r *CategoryRepo) ListCategories(ctx context.Context) ([]*domain.Category, 
 
 	if result := r.db.WithContext(ctx).Find(&categoriesDb); result.Error != nil {
 		if result.RowsAffected == 0 {
-			return nil, domain.ErrCategoryNotFound
+			return nil, domain.ErrCategoriesNotFound
 		}
 		return nil, result.Error
 	}
@@ -69,17 +69,12 @@ func (r *CategoryRepo) ListCategories(ctx context.Context) ([]*domain.Category, 
 func (r *CategoryRepo) DeleteCategory(ctx context.Context, id uint64) error {
 	var categoryDb = &models.CategoryModel{}
 
-	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(categoryDb)
-
-	// check error from database
-	if result.Error != nil {
+	if result := r.db.WithContext(ctx).Where("id = ?", id).Delete(categoryDb); result.Error != nil {
+		// validate if database deletes a field
+		if result.RowsAffected == 0 {
+			return domain.ErrCategoryNotFound
+		}
 		return result.Error
 	}
-
-	// validate if database deletes a field
-	if result.RowsAffected == 0 {
-		return domain.ErrCategoryNotFound
-	}
-
 	return nil
 }

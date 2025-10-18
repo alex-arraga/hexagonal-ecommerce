@@ -27,7 +27,7 @@ func (opr *OrderProductRepo) SaveOrderProduct(ctx context.Context, orderProduct 
 	if orderProduct.ID != uuid.Nil {
 		if result := opr.db.WithContext(ctx).Where("id = ?", orderProduct.ID).Updates(orderProductDb); result.Error != nil {
 			if result.RowsAffected == 0 {
-				return nil, domain.ErrProductNotFound // TODO -> Create new customs errors
+				return nil, domain.ErrOrderProductNotFound
 			}
 			return nil, result.Error
 		}
@@ -47,7 +47,7 @@ func (opr *OrderProductRepo) GetOrderProductById(ctx context.Context, id uuid.UU
 
 	if result := opr.db.WithContext(ctx).First(orderProductDb, "id = ?", id); result.Error != nil {
 		if result.RowsAffected == 0 {
-			return nil, domain.ErrProductNotFound
+			return nil, domain.ErrOrderProductNotFound
 		}
 		return nil, result.Error
 	}
@@ -61,6 +61,9 @@ func (opr *OrderProductRepo) ListOrderProducts(ctx context.Context) ([]*domain.O
 	var orderProductDb []*models.OrderProductModel
 
 	if result := opr.db.WithContext(ctx).Find(orderProductDb); result.Error != nil {
+		if result.RowsAffected == 0 {
+			return nil, domain.ErrOrdersProductNotFound
+		}
 		return nil, result.Error
 	}
 

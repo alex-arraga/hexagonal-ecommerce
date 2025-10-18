@@ -61,6 +61,9 @@ func (pr *ProductRepo) ListProducts(ctx context.Context) ([]*domain.Product, err
 	var productsDb []*models.ProductModel
 
 	if result := pr.db.WithContext(ctx).Preload("Category").Find(&productsDb); result.Error != nil {
+		if result.RowsAffected == 0 {
+			return nil, domain.ErrProductsNotFound
+		}
 		return nil, result.Error
 	}
 

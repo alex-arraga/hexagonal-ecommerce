@@ -79,10 +79,10 @@ func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (*domain
 func (repo *UserRepo) ListUsers(ctx context.Context, skip, limit uint64) ([]*domain.User, error) {
 	var dbUsers []*models.UserModel
 
-	if result := repo.db.WithContext(ctx).
-		Offset(int(skip)).
-		Limit(int(limit)).
-		Find(&dbUsers); result.Error != nil {
+	if result := repo.db.WithContext(ctx).Offset(int(skip)).Limit(int(limit)).Find(&dbUsers); result.Error != nil {
+		if result.RowsAffected == 0 {
+			return nil, domain.ErrUsersNotFound
+		}
 		return nil, result.Error
 	}
 
