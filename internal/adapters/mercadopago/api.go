@@ -12,8 +12,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strconv"
-	"time"
 )
 
 type PaymentProvider struct {
@@ -68,7 +66,8 @@ func (ps *PaymentProvider) GeneratePreference(ctx context.Context, order *domain
 	return &preference
 }
 
-func (ps *PaymentProvider) handlePayment(ctx context.Context, order *domain.Order, paymentId string) (*domain.Order, error) {
+// Returns the mercado pago payment object
+func (ps *PaymentProvider) handlePayment(ctx context.Context, paymentId string) (*mp_dtos.MpSimplifiedPayment, error) {
 	// prepare request to call mp api
 	url := fmt.Sprintf("https://api.mercadopago.com/v1/payments/%s", paymentId)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -90,72 +89,12 @@ func (ps *PaymentProvider) handlePayment(ctx context.Context, order *domain.Orde
 	err = json.NewDecoder(resp.Body).Decode(payment)
 	if err != nil {
 		return nil, fmt.Errorf("failed decoding payment: %w", err)
-
 	}
 
-	if payment.ExternalReference == "" {
-		return nil, fmt.Errorf("external_reference missing in payment")
-	}
-
-	// if order has been updated, return
-	if order.PaymentID != nil {
-		return nil, nil
-	}
-
-	// validations and handling errors
-	// external_reference must be equal than order id
-	if payment.ExternalReference != order.ID.String() {
-		return nil, fmt.Errorf("payment: %s external_reference does not match with order: %s", payment.ExternalReference, order.ID)
-	}
-
-	// avoids updating a order with an approved payment but that was never was credited due to account errors or holds
-	if payment.TransactionDetails.NetReceivedAmount <= 0 {
-		return nil, fmt.Errorf("net received amount is 0 or less for payment: %v", payment.ID)
-	}
-
-	// if the order has already been updated with this payment_id, return and do nothing
-	strPaymentId := strconv.Itoa(payment.ID)
-	if order.PaymentID == &strPaymentId {
-		return nil, fmt.Errorf("payment: %v already processed for order: %s", payment.ID, order.ID)
-	}
-
-	// update order with payment data
-	successfullyPayment := payment.Status == domain.Approved && payment.StatusDetail == domain.Accredited
-	fee := payment.TransactionAmount - payment.TransactionDetails.NetReceivedAmount
-
-	var paidAt time.Time
-	if successfullyPayment {
-		paidAt = time.Now()
-	}
-
-	var isPaid bool
-	if successfullyPayment {
-		isPaid = true
-	}
-
-	dataToUpdate := domain.UpdateOrderInputs{
-		PayStatus:         domain.PayStatus(payment.Status),
-		PayStatusDetail:   domain.PayStatusDetail(payment.StatusDetail),
-		PaymentID:         fmt.Sprint(payment.ID),
-		PayMethod:         payment.PayMethod.ID,
-		PayResource:       payment.PayMethod.Type,
-		Installments:      payment.Installments,
-		ExternalReference: payment.ExternalReference,
-		NetReceivedAmount: payment.TransactionDetails.NetReceivedAmount,
-		Fee:               fee,
-		PaidAt:            &paidAt,
-		Paid:              isPaid,
-	}
-
-	err = order.UpdateOrder(dataToUpdate)
-	if err != nil {
-		return nil, err
-	}
-
-	return order, nil
+	return payment, nil
 }
 
-func (ps *PaymentProvider) handleMerchantOrder(ctx context.Context, order *domain.Order, merchantOrderId string) (*domain.Order, error) {
+func (ps *PaymentProvider) handleMerchantOrder(ctx context.Context, merchantOrderId string) (*mp_dtos.MpSimplifiedPayment, error) {
 	// prepare request to call mp api
 	url := fmt.Sprintf("https://api.mercadopago.com/merchant_orders/%s", merchantOrderId)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -184,12 +123,12 @@ func (ps *PaymentProvider) handleMerchantOrder(ctx context.Context, order *domai
 	for _, payment := range merchantOrder.Payments {
 		if payment.Status == domain.Approved && payment.StatusDetail == domain.Accredited {
 			strPaymentId := fmt.Sprint(payment.ID)
-			updatedOrder, err := ps.handlePayment(ctx, order, strPaymentId)
+			mpPayment, err := ps.handlePayment(ctx, strPaymentId)
 			if err != nil {
 				slog.Error("error processing mercado pago payment", "error", err)
 			}
 			found = true
-			return updatedOrder, nil
+			return mpPayment, nil
 		}
 	}
 
@@ -200,8 +139,8 @@ func (ps *PaymentProvider) handleMerchantOrder(ctx context.Context, order *domai
 	return nil, nil
 }
 
-// CreatePayment implements ports.PaymentProvider.
-func (ps *PaymentProvider) ProcessPayment(ctx context.Context, preference *mp_dtos.MpPreferenceRequest) (*string, error) {
+// GenerateNewPayment implements ports.PaymentProvider.
+func (ps *PaymentProvider) GenerateNewPayment(ctx context.Context, preference *mp_dtos.MpPreferenceRequest) (*string, error) {
 	apiUrl := "https://api.mercadopago.com/checkout/preferences"
 
 	jsonBody, _ := json.Marshal(preference)
@@ -238,25 +177,25 @@ func (ps *PaymentProvider) ProcessPayment(ctx context.Context, preference *mp_dt
 }
 
 // VerifyPayment implements ports.PaymentProvider.
-func (ps *PaymentProvider) VerifyPayment(ctx context.Context, order *domain.Order, id, topic *string) (*domain.Order, error) {
+func (ps *PaymentProvider) VerifyPayment(ctx context.Context, id, topic *string) (*mp_dtos.MpSimplifiedPayment, error) {
 	if id == nil && topic == nil {
 		return nil, errors.New("parameters id or topic not found")
 	}
 
 	if id != nil && *topic == "payment" {
-		updatedOrder, err := ps.handlePayment(ctx, order, *id)
+		payment, err := ps.handlePayment(ctx, *id)
 		if err != nil {
 			return nil, err
 		}
-		return updatedOrder, nil
+		return payment, nil
 	}
 
 	if id != nil && *topic == "merchant_order" {
-		updatedOrder, err := ps.handleMerchantOrder(ctx, order, *id)
+		payment, err := ps.handleMerchantOrder(ctx, *id)
 		if err != nil {
 			return nil, err
 		}
-		return updatedOrder, nil
+		return payment, nil
 	}
 
 	return nil, nil

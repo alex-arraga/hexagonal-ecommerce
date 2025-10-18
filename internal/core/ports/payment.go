@@ -15,6 +15,6 @@ type PaymentService interface {
 
 type PaymentProvider interface {
 	GeneratePreference(ctx context.Context, order *domain.Order, items []mp_dtos.MpItem, user *domain.User) *mp_dtos.MpPreferenceRequest
-	ProcessPayment(ctx context.Context, preference *mp_dtos.MpPreferenceRequest) (*string, error)
-	VerifyPayment(ctx context.Context, order *domain.Order, id, topic *string) (*domain.Order, error)
+	GenerateNewPayment(ctx context.Context, preference *mp_dtos.MpPreferenceRequest) (*string, error)
+	VerifyPayment(ctx context.Context, id, topic *string) (*mp_dtos.MpSimplifiedPayment, error)
 }
