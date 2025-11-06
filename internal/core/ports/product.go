@@ -3,6 +3,7 @@ package ports
 import (
 	"context"
 	"go-ecommerce/internal/core/domain"
+	"go-ecommerce/internal/core/ports/ports_dtos"
 
 	"github.com/google/uuid"
 )
@@ -15,18 +16,8 @@ type ProductRepository interface {
 	DeleteProduct(ctx context.Context, id uuid.UUID) error
 }
 
-// ProductService is an interface for interacting with product-related business logic
-type SaveProductInputs struct {
-	ID         uuid.UUID
-	Name       string
-	Image      string
-	SKU        string
-	Price      float64
-	Stock      int64
-	CategoryID uint64
-}
 type ProductService interface {
-	SaveProduct(ctx context.Context, inputs SaveProductInputs) (*domain.Product, error)
+	SaveProduct(ctx context.Context, inputs ports_dtos.SaveProductInputs) (*domain.Product, error)
 	GetProductById(ctx context.Context, id uuid.UUID) (*domain.Product, error)
 	ListProducts(ctx context.Context) ([]*domain.Product, error)
 	DeleteProduct(ctx context.Context, id uuid.UUID) error

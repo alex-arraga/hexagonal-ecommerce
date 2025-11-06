@@ -7,6 +7,7 @@ import (
 	cachettl "go-ecommerce/internal/adapters/storage/cache/cache_ttl"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
+	"go-ecommerce/internal/core/ports/ports_dtos"
 	"log/slog"
 
 	"github.com/google/uuid"
@@ -25,18 +26,18 @@ func NewProductService(repo ports.ProductRepository, cache ports.CacheRepository
 }
 
 // SaveProduct implements ports.ProductService.
-func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProductInputs) (*domain.Product, error) {
+func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports_dtos.SaveProductInputs) (*domain.Product, error) {
 	var product *domain.Product
 
 	if inputs.ID == uuid.Nil {
 		// create a new product if inputs.ID doesn't exist
 		newProduct, err := domain.NewProduct(
-			inputs.Name,
-			inputs.SKU,
-			inputs.Image,
-			inputs.Stock,
-			inputs.Price,
-			inputs.CategoryID,
+			*inputs.Name,
+			*inputs.SKU,
+			*inputs.Image,
+			*inputs.Stock,
+			*inputs.Price,
+			*inputs.CategoryID,
 		)
 		if err != nil {
 			return nil, err
@@ -49,14 +50,15 @@ func (ps *ProductService) SaveProduct(ctx context.Context, inputs ports.SaveProd
 			return nil, err
 		}
 
-		prod.Update(
-			inputs.Name,
-			inputs.SKU,
-			inputs.Image,
-			inputs.Stock,
-			inputs.Price,
-			inputs.CategoryID,
-		)
+		updateData := ports_dtos.SaveProductInputs{
+			Name:       inputs.Name,
+			Image:      inputs.Image,
+			SKU:        inputs.SKU,
+			Price:      inputs.Price,
+			Stock:      inputs.Stock,
+			CategoryID: inputs.CategoryID,
+		}
+		prod.Update(updateData)
 		product = prod
 	}
 

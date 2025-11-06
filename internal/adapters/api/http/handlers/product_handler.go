@@ -6,6 +6,7 @@ import (
 	"go-ecommerce/internal/adapters/api/http/utils"
 	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports"
+	"go-ecommerce/internal/core/ports/ports_dtos"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -84,14 +85,14 @@ func (ph *ProductHandler) SaveProduct(r *http.Request, w http.ResponseWriter) {
 	}
 
 	// mapping the parameters with inputs required for save a product
-	inputs := ports.SaveProductInputs{
+	inputs := ports_dtos.SaveProductInputs{
 		ID:         id,
-		Name:       *params.Name,
-		Image:      *params.Image,
-		SKU:        *params.SKU,
-		Price:      *params.Price,
-		Stock:      *params.Stock,
-		CategoryID: *params.CategoryID,
+		Name:       params.Name,
+		Image:      params.Image,
+		SKU:        params.SKU,
+		Price:      params.Price,
+		Stock:      params.Stock,
+		CategoryID: params.CategoryID,
 	}
 
 	product, err := ph.srv.SaveProduct(r.Context(), inputs)
