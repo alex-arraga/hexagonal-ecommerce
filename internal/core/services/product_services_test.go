@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
+	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/ports/ports_dtos"
 	"go-ecommerce/internal/core/services"
 	testhelpers "go-ecommerce/internal/test_helpers"
@@ -123,4 +124,103 @@ func Test_ProductService_Update(t *testing.T) {
 	assert.Equal(t, image, updatedProd.Image)
 	assert.Equal(t, price, updatedProd.Price)
 	assert.Equal(t, stock, updatedProd.Stock)
+}
+func Test_ProductService_FindByID(t *testing.T) {
+	t.Helper()
+
+	ctx := context.Background()
+	db := testhelpers.NewSQLiteTestDB(t)
+	tx := db.Begin()
+	t.Cleanup(func() { tx.Rollback() })
+
+	redis := mocks.NewMockRedis()
+
+	// repos
+	prodRepo := repository.NewProductRepo(tx)
+	prodSrv := services.NewProductService(prodRepo, redis)
+
+	// services
+	catRepo := repository.NewCategoryRepo(tx)
+	categSrv := services.NewCategoryService(catRepo, redis)
+
+	// factory, create a category as foreign key
+	c := testhelpers.NewDomainCategory("Tablets")
+	savedCateg, err := categSrv.SaveCategory(ctx, 0, c.Name)
+	require.NoError(t, err)
+	assert.Equal(t, c.Name, savedCateg.Name)
+
+	// factory, create new product
+	p := testhelpers.NewDomainProduct("Ipad 14 pro", savedCateg.ID)
+	inputs := ports_dtos.SaveProductInputs{
+		Name:       &p.Name,
+		Image:      &p.Image,
+		SKU:        &p.SKU,
+		Price:      &p.Price,
+		Stock:      &p.Stock,
+		CategoryID: &savedCateg.ID,
+	}
+
+	// save new product
+	newProd, err := prodSrv.SaveProduct(ctx, inputs)
+	require.NoError(t, err)
+
+	assert.Equal(t, p.Name, newProd.Name)
+	assert.Equal(t, p.CategoryID, newProd.CategoryID)
+
+	prod, err := prodSrv.GetProductById(ctx, newProd.ID)
+	require.NoError(t, err)
+
+	assert.Equal(t, newProd.ID, prod.ID)
+	assert.Equal(t, newProd.Name, prod.Name)
+	assert.Equal(t, newProd.CategoryID, prod.CategoryID)
+}
+
+func Test_ProductService_Delete(t *testing.T) {
+	t.Helper()
+
+	ctx := context.Background()
+	db := testhelpers.NewSQLiteTestDB(t)
+	tx := db.Begin()
+	t.Cleanup(func() { tx.Rollback() })
+
+	redis := mocks.NewMockRedis()
+
+	// repos
+	prodRepo := repository.NewProductRepo(tx)
+	prodSrv := services.NewProductService(prodRepo, redis)
+
+	// services
+	catRepo := repository.NewCategoryRepo(tx)
+	categSrv := services.NewCategoryService(catRepo, redis)
+
+	// factory, create a category as foreign key
+	c := testhelpers.NewDomainCategory("Tablets")
+	savedCateg, err := categSrv.SaveCategory(ctx, 0, c.Name)
+	require.NoError(t, err)
+	assert.Equal(t, c.Name, savedCateg.Name)
+
+	// factory, create new product
+	p := testhelpers.NewDomainProduct("Ipad 14 pro", savedCateg.ID)
+	inputs := ports_dtos.SaveProductInputs{
+		Name:       &p.Name,
+		Image:      &p.Image,
+		SKU:        &p.SKU,
+		Price:      &p.Price,
+		Stock:      &p.Stock,
+		CategoryID: &savedCateg.ID,
+	}
+
+	// save new product
+	newProd, err := prodSrv.SaveProduct(ctx, inputs)
+	require.NoError(t, err)
+
+	assert.Equal(t, p.Name, newProd.Name)
+	assert.Equal(t, p.CategoryID, newProd.CategoryID)
+
+	// delete prod
+	err = prodSrv.DeleteProduct(ctx, newProd.ID)
+	require.NoError(t, err)
+
+	_, err = prodSrv.GetProductById(ctx, newProd.ID)
+	assert.Error(t, domain.ErrProductNotFound, err)
 }
