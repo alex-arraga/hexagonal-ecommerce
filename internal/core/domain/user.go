@@ -140,3 +140,13 @@ func (u *User) UpdateUser(i SaveUserInputs, hasher PasswordHasher) error {
 	u.UpdatedAt = time.Now()
 	return nil
 }
+
+func (u *User) ToInputs() SaveUserInputs {
+	return SaveUserInputs{
+		ID:       u.ID,
+		Name:     &u.Name,
+		Email:    &u.Email,
+		Password: &u.Password,
+		Role:     &u.Role,
+	}
+}
