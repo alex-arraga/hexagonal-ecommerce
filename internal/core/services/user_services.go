@@ -127,7 +127,7 @@ func (us *UserService) GetUserByEmail(ctx context.Context, email string) (*domai
 	}
 
 	// if the user is not cached, find in repo and cache
-	user, err := us.GetUserByEmail(ctx, email)
+	user, err := us.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}

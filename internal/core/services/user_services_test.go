@@ -95,3 +95,36 @@ func Test_UserService_Update(t *testing.T) {
 	assert.Equal(t, name, resultUpdate.Name)
 	assert.Equal(t, email, resultUpdate.Email)
 }
+
+func Test_UserService_GetByIDAndEmail(t *testing.T) {
+	t.Helper()
+
+	ctx := context.Background()
+	srv := newRepoServices(t)
+
+	// createa a new user
+	u := testhelpers.NewDomainUser("John", "john@mail.test")
+
+	inputs := domain.SaveUserInputs{
+		Name:     &u.Name,
+		Email:    &u.Email,
+		Password: &u.Password,
+		Role:     &u.Role,
+	}
+
+	newUser, err := srv.SaveUser(ctx, inputs)
+	require.NoError(t, err)
+
+	assert.Equal(t, u.Name, newUser.Name)
+	assert.Equal(t, u.Email, newUser.Email)
+
+	// obtain by id
+	userById, err := srv.GetUserByID(ctx, newUser.ID)
+	require.NoError(t, err)
+	assert.Equal(t, newUser.Email, userById.Email)
+
+	// obtain by email
+	userByEmail, err := srv.GetUserByEmail(ctx, newUser.Email)
+	require.NoError(t, err)
+	assert.Equal(t, newUser.Email, userByEmail.Email)
+}
