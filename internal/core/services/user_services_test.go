@@ -128,3 +128,34 @@ func Test_UserService_GetByIDAndEmail(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, newUser.Email, userByEmail.Email)
 }
+
+func Test_UserService_Delete(t *testing.T) {
+	t.Helper()
+
+	ctx := context.Background()
+	srv := newRepoServices(t)
+
+	// createa a new user
+	u := testhelpers.NewDomainUser("John", "john@mail.test")
+
+	inputs := domain.SaveUserInputs{
+		Name:     &u.Name,
+		Email:    &u.Email,
+		Password: &u.Password,
+		Role:     &u.Role,
+	}
+
+	newUser, err := srv.SaveUser(ctx, inputs)
+	require.NoError(t, err)
+
+	assert.Equal(t, u.Name, newUser.Name)
+	assert.Equal(t, u.Email, newUser.Email)
+
+	// obtain by email
+	err = srv.DeleteUser(ctx, newUser.ID)
+	require.NoError(t, err)
+
+	// obtain by id
+	_, err = srv.GetUserByID(ctx, newUser.ID)
+	require.Error(t, domain.ErrUserNotFound, err)
+}
