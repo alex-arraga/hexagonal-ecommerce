@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newRepoServices(t *testing.T) ports.UserService {
+func newUserServices(t *testing.T) ports.UserService {
 	t.Helper()
 
 	db := testhelpers.NewSQLiteTestDB(t)
@@ -35,7 +35,7 @@ func Test_UserService_Register(t *testing.T) {
 	t.Helper()
 
 	ctx := context.Background()
-	srv := newRepoServices(t)
+	srv := newUserServices(t)
 
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
 
@@ -57,7 +57,7 @@ func Test_UserService_Update(t *testing.T) {
 	t.Helper()
 
 	ctx := context.Background()
-	srv := newRepoServices(t)
+	srv := newUserServices(t)
 
 	// createa a new user
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
@@ -100,7 +100,7 @@ func Test_UserService_GetByIDAndEmail(t *testing.T) {
 	t.Helper()
 
 	ctx := context.Background()
-	srv := newRepoServices(t)
+	srv := newUserServices(t)
 
 	// createa a new user
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
@@ -133,7 +133,7 @@ func Test_UserService_Delete(t *testing.T) {
 	t.Helper()
 
 	ctx := context.Background()
-	srv := newRepoServices(t)
+	srv := newUserServices(t)
 
 	// createa a new user
 	u := testhelpers.NewDomainUser("John", "john@mail.test")

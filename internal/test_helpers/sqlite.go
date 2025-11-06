@@ -21,6 +21,12 @@ func NewSQLiteTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, db.Exec("PRAGMA foreign_keys = ON;").Error)
 
 	// automigrate all models
-	require.NoError(t, db.AutoMigrate(&models.UserModel{}))
+	require.NoError(t, db.AutoMigrate(
+		&models.UserModel{},
+		&models.ProductModel{},
+		&models.CategoryModel{},
+		&models.OrderModel{},
+		&models.OrderProductModel{},
+	))
 	return db
 }
