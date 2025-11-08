@@ -36,7 +36,7 @@ func (c *CartService) loadCart(ctx context.Context, userId uuid.UUID) *domain.Ca
 		return domain.NewCart(userId)
 	}
 
-	var cart *domain.Cart
+	var cart domain.Cart
 	err = json.Unmarshal(data, &cart)
 	if err != nil {
 		slog.Warn("error deserializing items of cart", "error", err)
@@ -44,7 +44,7 @@ func (c *CartService) loadCart(ctx context.Context, userId uuid.UUID) *domain.Ca
 	}
 
 	// return cart with values
-	return cart
+	return &cart
 }
 
 // helper func
@@ -52,7 +52,7 @@ func (c *CartService) saveCart(ctx context.Context, cart *domain.Cart) error {
 	cacheKey := cachekeys.Cart(cart.UserID.String())
 
 	// serialized data before caching
-	data, err := json.Marshal(&cart)
+	data, err := json.Marshal(cart)
 	if err != nil {
 		return err
 	}

@@ -28,13 +28,15 @@ func (m *MockRedis) Get(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (m *MockRedis) Delete(ctx context.Context, key string) error {
+	delete(m.store, key)
 	return nil
 }
 
 func (m *MockRedis) DeleteByPrefix(ctx context.Context, prefix string) error {
-	return nil
-}
-
-func (m *MockRedis) Close() error {
+	for k := range m.store {
+		if len(k) >= len(prefix) && k[:len(prefix)] == prefix {
+			delete(m.store, k)
+		}
+	}
 	return nil
 }
