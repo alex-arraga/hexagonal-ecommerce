@@ -10,9 +10,10 @@ import (
 type OrderProductRepository interface {
 	SaveOrderProduct(ctx context.Context, orderProduct *domain.OrderProduct) (*domain.OrderProduct, error)
 	GetOrderProductById(ctx context.Context, id uuid.UUID) (*domain.OrderProduct, error)
-	ListOrderProducts(ctx context.Context) ([]*domain.OrderProduct, error)
+	ListOrderProducts(ctx context.Context, orderID uuid.UUID) ([]*domain.OrderProduct, error)
 }
 
 type OrderProductService interface {
 	AddProductToOrder(ctx context.Context, orderID, productID uuid.UUID, quantity int16) (*domain.OrderProduct, error)
+	GetByOrderID(ctx context.Context, orderID uuid.UUID) ([]*domain.OrderProduct, error)
 }

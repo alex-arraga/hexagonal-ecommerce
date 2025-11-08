@@ -25,3 +25,12 @@ func (ops *OrderProductService) AddProductToOrder(ctx context.Context, orderID, 
 	}
 	return savedOrderProduct, nil
 }
+
+// GetByOrderID implements ports.OrderProductService.
+func (ops *OrderProductService) GetByOrderID(ctx context.Context, orderID uuid.UUID) ([]*domain.OrderProduct, error) {
+	items, err := ops.repo.ListOrderProducts(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	return items, nil
+}

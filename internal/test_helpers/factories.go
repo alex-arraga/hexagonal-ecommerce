@@ -3,6 +3,8 @@ package testhelpers
 import (
 	"go-ecommerce/internal/core/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func NewDomainUser(name, email string) *domain.User {
@@ -30,9 +32,29 @@ func NewDomainProduct(name string, categoryId uint64) *domain.Product {
 		CategoryID: categoryId,
 		SKU:        "product-test",
 		Stock:      100,
-		Price:      15,
+		Price:      10,
 		Image:      "product-image-test",
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
+	}
+}
+
+func NewDomainOrder(userId uuid.UUID) *domain.Order {
+	externalRef := uuid.New().String()
+
+	return &domain.Order{
+		Providers:         domain.MercadoPago,
+		UserID:            userId,
+		PaymentID:         nil,
+		ExternalReference: &externalRef,
+		Currency:          domain.ARS,
+		Fee:               nil,
+		Installments:      nil,
+		PayStatus:         domain.Approved,
+		NetReceivedAmount: nil,
+		PayMethod:         nil,
+		PayResource:       nil,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 }

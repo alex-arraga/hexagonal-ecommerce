@@ -57,10 +57,16 @@ func (opr *OrderProductRepo) GetOrderProductById(ctx context.Context, id uuid.UU
 }
 
 // ListOrderProducts implements ports.OrderProductRepository.
-func (opr *OrderProductRepo) ListOrderProducts(ctx context.Context) ([]*domain.OrderProduct, error) {
+func (opr *OrderProductRepo) ListOrderProducts(ctx context.Context, orderID uuid.UUID) ([]*domain.OrderProduct, error) {
 	var orderProductDb []*models.OrderProductModel
 
-	if result := opr.db.WithContext(ctx).Find(orderProductDb); result.Error != nil {
+	query := opr.db.WithContext(ctx)
+	if orderID != uuid.Nil {
+		query = query.Where("order_id = ?", orderID)
+	}
+
+	result := query.Find(&orderProductDb)
+	if result.Error != nil {
 		if result.RowsAffected == 0 {
 			return nil, domain.ErrOrdersProductNotFound
 		}
