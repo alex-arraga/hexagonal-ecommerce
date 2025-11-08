@@ -20,9 +20,10 @@ var (
 
 var (
 	// Category errors
-	ErrCategoryNameIsRequire = errors.New("name of category is required")
-	ErrCategoryNotFound      = errors.New("category not found")
-	ErrCategoriesNotFound    = errors.New("list of categories not found")
+	ErrCategoryNameIsRequire          = errors.New("name of category is required")
+	ErrMinLenghtCategoryNameIsRequire = errors.New("name of category must have at least 3 characters")
+	ErrCategoryNotFound               = errors.New("category not found")
+	ErrCategoriesNotFound             = errors.New("list of categories not found")
 )
 
 var (
@@ -53,6 +54,6 @@ var (
 )
 
 var (
-	ErrOrderNotFound = errors.New("order not found")
+	ErrOrderNotFound  = errors.New("order not found")
 	ErrOrdersNotFound = errors.New("list of orders not found")
 )

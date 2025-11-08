@@ -33,8 +33,12 @@ func (cs *CategoryService) SaveCategory(ctx context.Context, id uint64, name str
 			return nil, err
 		}
 		category = newCategory
+
 	} else {
-		category.UpdateCategory(name)
+		err := category.UpdateCategory(name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	result, err := cs.repo.SaveCategory(ctx, category)

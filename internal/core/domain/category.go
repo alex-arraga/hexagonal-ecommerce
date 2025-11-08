@@ -25,6 +25,15 @@ func NewCategory(name string) (*Category, error) {
 	}, nil
 }
 
-func (c *Category) UpdateCategory(name string) {
+func (c *Category) UpdateCategory(name string) error {
+	if len(name) <= 0 {
+		return ErrCategoryNameIsRequire
+	}
+
+	if len(name) < 3 {
+		return ErrMinLenghtCategoryNameIsRequire
+	}
+
 	c.Name = name
+	return nil
 }
