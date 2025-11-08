@@ -60,7 +60,7 @@ func (or *OrderRepo) GetOrderById(ctx context.Context, id uuid.UUID) (*domain.Or
 func (or *OrderRepo) ListOrders(ctx context.Context) ([]*domain.Order, error) {
 	var orderDb []*models.OrderModel
 
-	if result := or.db.WithContext(ctx).Preload("Items").Find(orderDb); result.Error != nil {
+	if result := or.db.WithContext(ctx).Preload("Items").Find(&orderDb); result.Error != nil {
 		if result.RowsAffected == 0 {
 			return nil, domain.ErrOrdersNotFound
 		}
