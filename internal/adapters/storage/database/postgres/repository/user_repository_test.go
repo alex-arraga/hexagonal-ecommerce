@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func newRepoTx(t *testing.T) (*gorm.DB, *repository.UserRepo) {
+func newUserRepoTx(t *testing.T) (*gorm.DB, *repository.UserRepo) {
 	db := testhelpers.NewSQLiteTestDB(t)
 	tx := db.Begin()
 	t.Cleanup(func() { tx.Rollback() })
@@ -22,7 +22,7 @@ func newRepoTx(t *testing.T) (*gorm.DB, *repository.UserRepo) {
 
 func Test_CreateUserAndGetUser(t *testing.T) {
 	ctx := context.Background()
-	_, repo := newRepoTx(t)
+	_, repo := newUserRepoTx(t)
 
 	// create user
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
@@ -48,7 +48,7 @@ func Test_CreateUserAndGetUser(t *testing.T) {
 
 func Test_ListUsers(t *testing.T) {
 	ctx := context.Background()
-	_, repo := newRepoTx(t)
+	_, repo := newUserRepoTx(t)
 
 	// creates 20 users
 	for range 20 {
@@ -71,7 +71,7 @@ func Test_ListUsers(t *testing.T) {
 
 func Test_UpdateUser(t *testing.T) {
 	ctx := context.Background()
-	_, repo := newRepoTx(t)
+	_, repo := newUserRepoTx(t)
 
 	u := testhelpers.NewDomainUser("john", "john@mail.test")
 	created, err := repo.SaveUser(ctx, u)
@@ -95,7 +95,7 @@ func Test_UpdateUser(t *testing.T) {
 
 func Test_DeleteUser(t *testing.T) {
 	ctx := context.Background()
-	_, repo := newRepoTx(t)
+	_, repo := newUserRepoTx(t)
 
 	u := testhelpers.NewDomainUser("john", "john@mail.test")
 	created, err := repo.SaveUser(ctx, u)
