@@ -26,7 +26,7 @@ type depToTestingOrderSrv struct {
 	orderSrv   ports.OrderService
 }
 
-func newOrderSrvTx(t *testing.T) *depToTestingOrderSrv {
+func newOrderSrvTest(t *testing.T) *depToTestingOrderSrv {
 	db := testhelpers.NewSQLiteTestDB(t)
 	tx := db.Begin()
 	t.Cleanup(func() { tx.Rollback() })
@@ -65,7 +65,7 @@ func newOrderSrvTx(t *testing.T) *depToTestingOrderSrv {
 func Test_OrderServices_Create(t *testing.T) {
 	t.Helper()
 
-	srv := newOrderSrvTx(t)
+	srv := newOrderSrvTest(t)
 	ctx := context.Background()
 
 	// factory user
@@ -139,7 +139,7 @@ func Test_OrderServices_Create(t *testing.T) {
 func Test_OrderServices_Update(t *testing.T) {
 	t.Helper()
 
-	srv := newOrderSrvTx(t)
+	srv := newOrderSrvTest(t)
 	ctx := context.Background()
 
 	// factory user
@@ -241,7 +241,7 @@ func Test_OrderServices_Update(t *testing.T) {
 func Test_OrderServices_GetByID(t *testing.T) {
 	t.Helper()
 
-	srv := newOrderSrvTx(t)
+	srv := newOrderSrvTest(t)
 	ctx := context.Background()
 
 	// factory user
