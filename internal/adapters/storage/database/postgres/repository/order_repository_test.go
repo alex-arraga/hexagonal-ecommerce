@@ -3,12 +3,13 @@ package repository_test
 import (
 	"context"
 	"go-ecommerce/internal/adapters/storage/database/postgres/repository"
-	"go-ecommerce/internal/core/ports/ports_dtos"
+	"go-ecommerce/internal/core/domain"
 	"go-ecommerce/internal/core/services"
 	testhelpers "go-ecommerce/internal/test_helpers"
 	"testing"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -120,6 +121,11 @@ func Test_UpdateOrder(t *testing.T) {
 	ctx := context.Background()
 	_, repos := newOrderRepoTx(t)
 
+	u := testhelpers.NewDomainUser("John", "john@test.com")
+	newUser, err := repos.userRepo.SaveUser(ctx, u)
+	require.NoError(t, err)
+	assert.Equal(t, u.Name, newUser.Name)
+
 	c := testhelpers.NewDomainCategory("SmartPhones")
 	newCateg, err := repos.categRepo.SaveCategory(ctx, c)
 	require.NoError(t, err)
@@ -128,35 +134,38 @@ func Test_UpdateOrder(t *testing.T) {
 	// create product
 	p := testhelpers.NewDomainProduct("Iphone 15 Pro Max", newCateg.ID)
 	newProduct, err := repos.prodRepo.SaveProduct(ctx, p)
-
 	require.NoError(t, err)
 	require.NotNil(t, newProduct)
 	assert.Equal(t, p.Name, newProduct.Name)
 	assert.Equal(t, p.Price, newProduct.Price)
 	assert.Equal(t, p.SKU, newProduct.SKU)
 
-	// get by id
-	recoveredProduct, err := repos.prodRepo.GetProductById(ctx, newProduct.ID)
+	// create order
+	o := testhelpers.NewDomainOrder(newUser.ID)
+	newOrder, err := repos.orderRepo.SaveOrder(ctx, o)
 	require.NoError(t, err)
-	require.NotNil(t, recoveredProduct)
-	assert.Equal(t, newProduct.ID, recoveredProduct.ID)
+	assert.Equal(t, o.UserID, newOrder.UserID)
+
+	// get order by id
+	recoveredOrder, err := repos.orderRepo.GetOrderById(ctx, newOrder.ID)
+	require.NoError(t, err)
+	require.NotNil(t, recoveredOrder)
+	assert.Equal(t, newOrder.ID, recoveredOrder.ID)
 
 	// update data
-	newName := "Iphone 15 Pro Max - Rosa"
-	newPrice := 120.99
-	var newStock int64 = 12
-
-	updateData := ports_dtos.SaveProductInputs{
-		Name:  &newName,
-		Price: &newPrice,
-		Stock: &newStock,
+	updateData := domain.UpdateOrderInputs{
+		PayStatus:    domain.Approved,
+		Installments: 3,
+		Paid:         true,
+		PaymentID:    uuid.NewString(),
 	}
-	newProduct.Update(updateData)
+	newOrder.UpdateOrder(updateData)
 
-	// save the new data of product
-	updatedProduct, err := repos.prodRepo.SaveProduct(ctx, newProduct)
+	// save order with new data
+	updatedOrder, err := repos.orderRepo.SaveOrder(ctx, newOrder)
 	require.NoError(t, err)
-	assert.Equal(t, newProduct.Name, updatedProduct.Name)
-	assert.Equal(t, newProduct.Price, updatedProduct.Price)
-	assert.Equal(t, newProduct.Stock, updatedProduct.Stock)
+	assert.Equal(t, o.UserID, updatedOrder.UserID)
+	assert.Equal(t, updateData.Installments, *updatedOrder.Installments)
+	assert.Equal(t, updateData.PayStatus, updatedOrder.PayStatus)
+	assert.Equal(t, updateData.Paid, updatedOrder.Paid)
 }
