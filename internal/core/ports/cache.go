@@ -11,4 +11,5 @@ type CacheRepository interface {
 	Get(ctx context.Context, key string) ([]byte, error)                        // Get retrieves the value from the cache
 	Delete(ctx context.Context, key string) error                               // Delete removes the value from the cache
 	DeleteByPrefix(ctx context.Context, prefix string) error                    // DeleteByPrefix removes the value from the cache with the given prefix
+	Close() error                                                               // Close closes the connection to the cache server
 }

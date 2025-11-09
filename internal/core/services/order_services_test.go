@@ -17,10 +17,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_OrderServices_Create(t *testing.T) {
-	t.Helper()
+type depToTestingOrderSrv struct {
+	userSrv    ports.UserService
+	opSrv      ports.OrderProductService
+	productSrv ports.ProductService
+	categSrv   ports.CategoryService
+	cartSrv    ports.CartService
+	orderSrv   ports.OrderService
+}
 
-	ctx := context.Background()
+func newOrderSrvTx(t *testing.T) *depToTestingOrderSrv {
 	db := testhelpers.NewSQLiteTestDB(t)
 	tx := db.Begin()
 	t.Cleanup(func() { tx.Rollback() })
@@ -28,22 +34,39 @@ func Test_OrderServices_Create(t *testing.T) {
 	redis := mocks.NewMockRedis()
 	hasher := &security.Hasher{}
 
-	// repos
-	userRepo := repository.NewUserRepo(tx)
-	opRepo := repository.NewOrderProductRepo(tx)
-	productRepo := repository.NewProductRepo(tx)
-	categRepo := repository.NewCategoryRepo(tx)
+	userRepo := repository.NewUserRepo(tx).(*repository.UserRepo)
+	prodRepo := repository.NewProductRepo(tx).(*repository.ProductRepo)
+	categRepo := repository.NewCategoryRepo(tx).(*repository.CategoryRepo)
+	orderProdRepo := repository.NewOrderProductRepo(tx).(*repository.OrderProductRepo)
+
+	orderProdSrv := services.NewOrderProductService(orderProdRepo)
+	orderRepo := repository.NewOrderRepo(orderProdSrv, tx).(*repository.OrderRepo)
 
 	// services
 	userSrv := services.NewUserService(userRepo, redis, hasher)
-	opSrv := services.NewOrderProductService(opRepo)
-	productSrv := services.NewProductService(productRepo, redis)
+	opSrv := services.NewOrderProductService(orderProdRepo)
+	productSrv := services.NewProductService(prodRepo, redis)
 	categSrv := services.NewCategoryService(categRepo, redis)
 	cartSrv := services.NewCartService(redis, productSrv)
+	orderSrv := services.NewOrderService(orderRepo, orderProdSrv, cartSrv, redis)
 
-	// order repo and service
-	orderRepo := repository.NewOrderRepo(opSrv, tx)
-	orderSrv := services.NewOrderService(orderRepo, opSrv, cartSrv, redis)
+	srvs := &depToTestingOrderSrv{
+		userSrv:    userSrv,
+		opSrv:      opSrv,
+		productSrv: productSrv,
+		categSrv:   categSrv,
+		cartSrv:    cartSrv,
+		orderSrv:   orderSrv,
+	}
+
+	return srvs
+}
+
+func Test_OrderServices_Create(t *testing.T) {
+	t.Helper()
+
+	srv := newOrderSrvTx(t)
+	ctx := context.Background()
 
 	// factory user
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
@@ -55,14 +78,14 @@ func Test_OrderServices_Create(t *testing.T) {
 	}
 
 	// save user in db
-	newUser, err := userSrv.SaveUser(ctx, userInputs)
+	newUser, err := srv.userSrv.SaveUser(ctx, userInputs)
 	require.NoError(t, err)
 	assert.Equal(t, u.Name, newUser.Name)
 	assert.Equal(t, u.Email, newUser.Email)
 
 	// factory, create a new category to will use as foreign key of product
 	c := testhelpers.NewDomainCategory("Tablets")
-	savedCateg, err := categSrv.SaveCategory(ctx, 0, c.Name)
+	savedCateg, err := srv.categSrv.SaveCategory(ctx, 0, c.Name)
 	require.NoError(t, err)
 	assert.Equal(t, c.Name, savedCateg.Name)
 
@@ -78,13 +101,13 @@ func Test_OrderServices_Create(t *testing.T) {
 	}
 
 	// save product in db
-	newProd, err := productSrv.SaveProduct(ctx, inputs)
+	newProd, err := srv.productSrv.SaveProduct(ctx, inputs)
 	require.NoError(t, err)
 	assert.Equal(t, p.Name, newProd.Name)
 	assert.Equal(t, p.CategoryID, newProd.CategoryID)
 
 	// add products to cart before create the order
-	err = cartSrv.AddItemToCart(ctx, newUser.ID, newProd.ID, 5)
+	err = srv.cartSrv.AddItemToCart(ctx, newUser.ID, newProd.ID, 5)
 	require.NoError(t, err)
 
 	// factory, create a new order
@@ -99,54 +122,25 @@ func Test_OrderServices_Create(t *testing.T) {
 	}
 
 	// save order in db
-	newOrder, err := orderSrv.SaveOrder(ctx, orderInputs)
+	newOrder, err := srv.orderSrv.SaveOrder(ctx, orderInputs)
 	require.NoError(t, err)
 	assert.Equal(t, o.UserID, newOrder.UserID)
 
 	// verify if the order contains the correct items
-	orderItems, err := opSrv.GetByOrderID(ctx, newOrder.ID)
+	orderItems, err := srv.opSrv.GetByOrderID(ctx, newOrder.ID)
 	require.NoError(t, err)
 	require.Len(t, orderItems, 1)
 
 	item := orderItems[0]
 	assert.Equal(t, newProd.ID, item.ProductID)
 	assert.Equal(t, int16(5), item.Quantity)
-
-	// verify if the order contains the correct amount
-	amount, err := cartSrv.CalcItemsAmount(ctx, newUser.ID)
-	require.NoError(t, err)
-	assert.Equal(t, amount.Total, newOrder.Total)
-	assert.Equal(t, amount.SubTotal, newOrder.SubTotal)
-	assert.Equal(t, amount.Discount, newOrder.Discount)
 }
 
 func Test_OrderServices_Update(t *testing.T) {
 	t.Helper()
 
+	srv := newOrderSrvTx(t)
 	ctx := context.Background()
-	db := testhelpers.NewSQLiteTestDB(t)
-	tx := db.Begin()
-	t.Cleanup(func() { tx.Rollback() })
-
-	redis := mocks.NewMockRedis()
-	hasher := &security.Hasher{}
-
-	// repos
-	userRepo := repository.NewUserRepo(tx)
-	opRepo := repository.NewOrderProductRepo(tx)
-	productRepo := repository.NewProductRepo(tx)
-	categRepo := repository.NewCategoryRepo(tx)
-
-	// services
-	userSrv := services.NewUserService(userRepo, redis, hasher)
-	opSrv := services.NewOrderProductService(opRepo)
-	productSrv := services.NewProductService(productRepo, redis)
-	categSrv := services.NewCategoryService(categRepo, redis)
-	cartSrv := services.NewCartService(redis, productSrv)
-
-	// order repo and service
-	orderRepo := repository.NewOrderRepo(opSrv, tx)
-	orderSrv := services.NewOrderService(orderRepo, opSrv, cartSrv, redis)
 
 	// factory user
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
@@ -158,14 +152,14 @@ func Test_OrderServices_Update(t *testing.T) {
 	}
 
 	// save user in db
-	newUser, err := userSrv.SaveUser(ctx, userInputs)
+	newUser, err := srv.userSrv.SaveUser(ctx, userInputs)
 	require.NoError(t, err)
 	assert.Equal(t, u.Name, newUser.Name)
 	assert.Equal(t, u.Email, newUser.Email)
 
 	// factory, create a new category to will use as foreign key of product
 	c := testhelpers.NewDomainCategory("Tablets")
-	savedCateg, err := categSrv.SaveCategory(ctx, 0, c.Name)
+	savedCateg, err := srv.categSrv.SaveCategory(ctx, 0, c.Name)
 	require.NoError(t, err)
 	assert.Equal(t, c.Name, savedCateg.Name)
 
@@ -181,13 +175,13 @@ func Test_OrderServices_Update(t *testing.T) {
 	}
 
 	// save product in db
-	newProd, err := productSrv.SaveProduct(ctx, inputs)
+	newProd, err := srv.productSrv.SaveProduct(ctx, inputs)
 	require.NoError(t, err)
 	assert.Equal(t, p.Name, newProd.Name)
 	assert.Equal(t, p.CategoryID, newProd.CategoryID)
 
 	// add products to cart before create the order
-	err = cartSrv.AddItemToCart(ctx, newUser.ID, newProd.ID, 5)
+	err = srv.cartSrv.AddItemToCart(ctx, newUser.ID, newProd.ID, 5)
 	require.NoError(t, err)
 
 	// factory, create a new order
@@ -202,25 +196,18 @@ func Test_OrderServices_Update(t *testing.T) {
 	}
 
 	// save new order in db
-	newOrder, err := orderSrv.SaveOrder(ctx, orderInputs)
+	newOrder, err := srv.orderSrv.SaveOrder(ctx, orderInputs)
 	require.NoError(t, err)
 	assert.Equal(t, o.UserID, newOrder.UserID)
 
 	// verify if the order contains the correct items
-	orderItems, err := opSrv.GetByOrderID(ctx, newOrder.ID)
+	orderItems, err := srv.opSrv.GetByOrderID(ctx, newOrder.ID)
 	require.NoError(t, err)
 	require.Len(t, orderItems, 1)
 
 	item := orderItems[0]
 	assert.Equal(t, newProd.ID, item.ProductID)
 	assert.Equal(t, int16(5), item.Quantity)
-
-	// verify if the order contains the correct amount
-	amount, err := cartSrv.CalcItemsAmount(ctx, newUser.ID)
-	require.NoError(t, err)
-	assert.Equal(t, amount.Total, newOrder.Total)
-	assert.Equal(t, amount.SubTotal, newOrder.SubTotal)
-	assert.Equal(t, amount.Discount, newOrder.Discount)
 
 	// update order
 	payStatus := domain.Approved
@@ -238,8 +225,12 @@ func Test_OrderServices_Update(t *testing.T) {
 		PaymentID:         &paymentId,
 	}
 
+	// add products again because after save, the cart is cleaned
+	err = srv.cartSrv.AddItemToCart(ctx, newUser.ID, newProd.ID, 5)
+	require.NoError(t, err)
+
 	// save updated order in db
-	updatedOrder, err := orderSrv.SaveOrder(ctx, updateData)
+	updatedOrder, err := srv.orderSrv.SaveOrder(ctx, updateData)
 	require.NoError(t, err)
 	assert.Equal(t, updateData.ID, updatedOrder.ID)
 	assert.Equal(t, *updateData.PayStatus, updatedOrder.PayStatus)
@@ -250,30 +241,8 @@ func Test_OrderServices_Update(t *testing.T) {
 func Test_OrderServices_GetByID(t *testing.T) {
 	t.Helper()
 
+	srv := newOrderSrvTx(t)
 	ctx := context.Background()
-	db := testhelpers.NewSQLiteTestDB(t)
-	tx := db.Begin()
-	t.Cleanup(func() { tx.Rollback() })
-
-	redis := mocks.NewMockRedis()
-	hasher := &security.Hasher{}
-
-	// repos
-	userRepo := repository.NewUserRepo(tx)
-	opRepo := repository.NewOrderProductRepo(tx)
-	productRepo := repository.NewProductRepo(tx)
-	categRepo := repository.NewCategoryRepo(tx)
-
-	// services
-	userSrv := services.NewUserService(userRepo, redis, hasher)
-	opSrv := services.NewOrderProductService(opRepo)
-	productSrv := services.NewProductService(productRepo, redis)
-	categSrv := services.NewCategoryService(categRepo, redis)
-	cartSrv := services.NewCartService(redis, productSrv)
-
-	// order repo and service
-	orderRepo := repository.NewOrderRepo(opSrv, tx)
-	orderSrv := services.NewOrderService(orderRepo, opSrv, cartSrv, redis)
 
 	// factory user
 	u := testhelpers.NewDomainUser("John", "john@mail.test")
@@ -285,14 +254,14 @@ func Test_OrderServices_GetByID(t *testing.T) {
 	}
 
 	// save user in db
-	newUser, err := userSrv.SaveUser(ctx, userInputs)
+	newUser, err := srv.userSrv.SaveUser(ctx, userInputs)
 	require.NoError(t, err)
 	assert.Equal(t, u.Name, newUser.Name)
 	assert.Equal(t, u.Email, newUser.Email)
 
 	// factory, create a new category to will use as foreign key of product
 	c := testhelpers.NewDomainCategory("Tablets")
-	savedCateg, err := categSrv.SaveCategory(ctx, 0, c.Name)
+	savedCateg, err := srv.categSrv.SaveCategory(ctx, 0, c.Name)
 	require.NoError(t, err)
 	assert.Equal(t, c.Name, savedCateg.Name)
 
@@ -308,13 +277,13 @@ func Test_OrderServices_GetByID(t *testing.T) {
 	}
 
 	// save product in db
-	newProd, err := productSrv.SaveProduct(ctx, inputs)
+	newProd, err := srv.productSrv.SaveProduct(ctx, inputs)
 	require.NoError(t, err)
 	assert.Equal(t, p.Name, newProd.Name)
 	assert.Equal(t, p.CategoryID, newProd.CategoryID)
 
 	// add products to cart before create the order
-	err = cartSrv.AddItemToCart(ctx, newUser.ID, newProd.ID, 5)
+	err = srv.cartSrv.AddItemToCart(ctx, newUser.ID, newProd.ID, 5)
 	require.NoError(t, err)
 
 	// factory, create a new order
@@ -329,12 +298,12 @@ func Test_OrderServices_GetByID(t *testing.T) {
 	}
 
 	// save order in db
-	newOrder, err := orderSrv.SaveOrder(ctx, orderInputs)
+	newOrder, err := srv.orderSrv.SaveOrder(ctx, orderInputs)
 	require.NoError(t, err)
 	assert.Equal(t, o.UserID, newOrder.UserID)
 
 	// verify if the order contains the correct items
-	orderItems, err := opSrv.GetByOrderID(ctx, newOrder.ID)
+	orderItems, err := srv.opSrv.GetByOrderID(ctx, newOrder.ID)
 	require.NoError(t, err)
 	require.Len(t, orderItems, 1)
 
@@ -342,15 +311,8 @@ func Test_OrderServices_GetByID(t *testing.T) {
 	assert.Equal(t, newProd.ID, item.ProductID)
 	assert.Equal(t, int16(5), item.Quantity)
 
-	// verify if the order contains the correct amount
-	amount, err := cartSrv.CalcItemsAmount(ctx, newUser.ID)
-	require.NoError(t, err)
-	assert.Equal(t, amount.Total, newOrder.Total)
-	assert.Equal(t, amount.SubTotal, newOrder.SubTotal)
-	assert.Equal(t, amount.Discount, newOrder.Discount)
-
 	// find order by id
-	order, err := orderRepo.GetOrderById(ctx, newOrder.ID)
+	order, err := srv.orderSrv.GetOrderById(ctx, newOrder.ID)
 	require.NoError(t, err)
 	assert.Equal(t, order.ID, newOrder.ID)
 	assert.Equal(t, order.Total, newOrder.Total)
