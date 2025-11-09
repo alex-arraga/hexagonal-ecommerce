@@ -28,3 +28,12 @@ func NewOrderProduct(orderID, productID uuid.UUID, quantity int16) *OrderProduct
 		Quantity:  quantity,
 	}
 }
+
+func (op *OrderProduct) UpdateOrderProduct(quantity int16) error {
+	if quantity <= 0 {
+		return ErrOrderProductMinQuantity
+	}
+
+	op.Quantity = quantity
+	return nil
+}

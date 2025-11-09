@@ -58,3 +58,11 @@ func NewDomainOrder(userId uuid.UUID) *domain.Order {
 		UpdatedAt:         time.Now(),
 	}
 }
+
+func NewDomainOrderProduct(orderId, productId uuid.UUID, quantity int16) *domain.OrderProduct {
+	return &domain.OrderProduct{
+		OrderID:   orderId,
+		ProductID: productId,
+		Quantity:  quantity,
+	}
+}

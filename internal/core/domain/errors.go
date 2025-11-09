@@ -44,6 +44,7 @@ var (
 var (
 	ErrOrderProductNotFound  = errors.New("order-product not found")
 	ErrOrdersProductNotFound = errors.New("list of orders-product not found")
+	ErrOrderProductMinQuantity = errors.New("the quantity must be greater than 0")
 )
 
 // Cart errors
